@@ -1,0 +1,17 @@
+{
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.5",
+    "@std/cli": "jsr:@std/cli@^1.0.6",
+    "@types/fhir": "npm:@types/fhir@^3.0.2",
+    "fhirpath": "npm:fhirpath@^3.15.0"
+  },
+  "compilerOptions": {
+    "experimentalDecorators": true
+  },
+  "tasks": {
+    "test:restful": "deno test --allow-all --trace-leaks ./src/runner.ts --",
+    "test:restful:junit": "deno test --allow-all --trace-leaks ./src/runner.ts --reporter junit",
+    "test:restful:json": "deno test --allow-all --trace-leaks ./src/runner.ts -- --store",
+    "test:restful:init": "deno test --allow-all --trace-leaks ./src/init/suite.ts"
+  }
+}
