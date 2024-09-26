@@ -27,8 +27,8 @@ This testkit is designed to run a comprehensive suite of tests against a FHIR R4
 
 1. Clone this repository:
 ```
-git clone https://github.com/your-username/fhir-r4-testkit.git
-cd fhir-r4-testkit
+git clone https://github.com/atollee/fhir-rest-testkit.git
+cd fhir-rest-testkit
 ```
 
 2. Create a `config.ts` file in the `src/tests` directory. Use the `config.dist.ts` file as a template:
