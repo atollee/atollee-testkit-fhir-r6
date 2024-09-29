@@ -54,6 +54,7 @@ import { runConformanceTransactionIntegrityTests } from "./restful/transactional
 import { runTransactionalIntegrityTests } from "./restful/transactional/transactional_integrity.test.ts";
 import { runHistoryTests } from "./restful/history/history.test.ts";
 import { runReadTests } from "./restful/read/read.test.ts";
+import { runMinimalTest } from "./restful/base/minimal.test.ts";
 
 // deno-lint-ignore require-await
 export async function testSuite(callback: () => void) {
@@ -86,7 +87,8 @@ export async function testSuite(callback: () => void) {
         isPaginationSupported: () => CONFIG.paginationSupported,
     };
 
-    const exclude = false;
+    runMinimalTest(testContext);
+    const exclude = true;
     if (!exclude) {
         describe("3.2.0.1.2 Service Base URL", () => {
             runBaseTests(testContext);
