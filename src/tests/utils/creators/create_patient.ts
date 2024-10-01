@@ -2,7 +2,7 @@ import { HumanName, Narrative, Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
 import { HumanNameOptions, LinkOptions, MaritalStatusCoding } from "./types.ts";
-import { createHumanName } from "./utils.ts";
+import { createHumanName, getRandomText } from "./utils.ts";
 import { Meta } from "npm:@types/fhir";
 
 export interface PatientOptions {
@@ -24,6 +24,21 @@ export interface PatientOptions {
     generalPractitioner?: Array<{ reference: string }>;
     meta?: Meta;
     text?: Narrative;
+    communication?: Array<{
+        language: {
+            coding: Array<{
+                system: string;
+                code: string;
+            }>;
+        };
+    }>;
+    managingOrganization?: {
+        reference: string;
+    };
+}
+
+export function getTestPatientCurrentIdentifier() {
+    return `test-id-${getRandomText()}`;
 }
 
 export async function createTestPatient(
@@ -36,6 +51,7 @@ export async function createTestPatient(
         birthDate: "1990-01-01",
         gender: "unknown",
         active: true,
+        identifier: [{ value: getTestPatientCurrentIdentifier() }],
     };
 
     const mergedOptions = { ...defaultOptions, ...options };
@@ -64,6 +80,8 @@ export async function createTestPatient(
         address: mergedOptions.address,
         link: mergedOptions.link,
         maritalStatus: mergedOptions.maritalStatus,
+        communication: options.communication,
+        managingOrganization: options.managingOrganization
     };
 
     if (mergedOptions.id) {

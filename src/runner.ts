@@ -1,6 +1,7 @@
 import { parseArgs } from "@std/cli/parse-args";
 import { testSuite } from "./tests/suite.ts";
 import { getTestResults, mainDescribe } from "./tests/utils/bdd/mod.ts";
+import { searchSuite } from "./tests/search/search_suite.ts";
 
 const { args } = Deno;
 const parsedArgs = parseArgs(args, {
@@ -35,4 +36,5 @@ const callback = () => {
     }
 };
 
-await mainDescribe("FHIR Restful Tests", async () => testSuite(callback));
+//await mainDescribe("FHIR Restful Tests", async () => testSuite(callback));
+await mainDescribe("FHIR Search Tests", async () => searchSuite(callback));

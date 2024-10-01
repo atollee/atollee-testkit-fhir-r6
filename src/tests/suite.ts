@@ -87,8 +87,12 @@ export async function testSuite(callback: () => void) {
         isPaginationSupported: () => CONFIG.paginationSupported,
     };
 
-    runMinimalTest(testContext);
-    const exclude = true;
+    const exclude = false;
+    /*
+    describe("3.2.0.1.8 conditional read", () => {
+        runConditionalReadTests(testContext);
+    });
+    */
     if (!exclude) {
         describe("3.2.0.1.2 Service Base URL", () => {
             runBaseTests(testContext);

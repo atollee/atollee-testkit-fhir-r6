@@ -10,3 +10,16 @@ export function createHumanName(options: HumanNameOptions): HumanName {
         text: options.text,
     };
 }
+
+let testRandomText = "";
+
+export function getRandomText(): string {
+    if (!testRandomText) {
+        testRandomText = Date.now().toString();
+    }
+    return testRandomText;
+}
+
+export function updateRandomText() {
+    testRandomText = Date.now().toString();
+}

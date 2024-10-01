@@ -12,6 +12,7 @@
     "test:restful": "deno test --allow-all --trace-leaks ./src/runner.ts --",
     "test:restful:junit": "deno test --allow-all --trace-leaks ./src/runner.ts --reporter junit",
     "test:restful:json": "deno test --allow-all --trace-leaks ./src/runner.ts -- --store",
-    "test:restful:init": "deno test --allow-all --trace-leaks ./src/init/suite.ts"
+    "test:restful:init": "deno test --allow-all --trace-leaks ./src/init/suite.ts",
+    "test:search": "deno test --allow-all --trace-leaks ./src/runner.ts --"
   }
 }

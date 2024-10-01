@@ -1,6 +1,7 @@
 import {
     afterAll,
     beforeAll,
+    beforeEach,
 } from "https://deno.land/std@0.224.0/testing/bdd.ts";
 
 import { assert } from "./src/tests/utils/asserts/assert.ts";
@@ -23,4 +24,4 @@ export {
     assertNotExists,
     assertThrows,
 };
-export { afterAll, beforeAll, describe, it };
+export { afterAll, beforeAll, beforeEach, describe, it };
