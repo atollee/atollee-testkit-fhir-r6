@@ -142,10 +142,11 @@ export async function searchSuite(callback: () => void) {
         getDefaultPageSize: () => CONFIG.defaultPageSize,
         isPaginationSupported: () => CONFIG.paginationSupported,
     };
-    describe("3.2.1.5.13 String Parameter", () => {
-        runStringParameterTests(testContext);
+
+    describe("3.2.1.2.2 Search Inputs", () => {
+        runSearchInputTests(testContext);
     });
-    const exclude = true;
+const exclude = true;
     if (!exclude) {
         describe("3.2.1.2.2 Search Inputs", () => {
             runSearchInputTests(testContext);
