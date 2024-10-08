@@ -3,8 +3,10 @@
 import { Group, Reference } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { createIdentifierOptions } from "./utils.ts";
+import { IIdentifierOptions } from "./types.ts";
 
-export interface GroupOptions {
+export interface GroupOptions extends IIdentifierOptions {
     name?: string;
     type: Group["type"];
     actual: boolean;
@@ -65,6 +67,7 @@ export async function createTestGroup(
         name: `TestGroup-${Date.now()}`,
         type: "person",
         actual: true,
+        identifier: createIdentifierOptions(options.identifier),
     };
 
     const mergedOptions = { ...defaultOptions, ...options };

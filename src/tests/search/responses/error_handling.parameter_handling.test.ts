@@ -8,7 +8,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import { createTestPatient } from "../../utils/resource_creators.ts";
 import { Bundle, OperationOutcome } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
@@ -20,7 +20,7 @@ export function runErrorHandlingParameterHandlingTests(context: ITestContext) {
             family: "UnknownParamTest",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?family=UnknownParamTest&unknownParameter=value`,
@@ -57,7 +57,7 @@ export function runErrorHandlingParameterHandlingTests(context: ITestContext) {
     });
 
     it("Should return an error with Prefer header set to 'handling=strict'", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?unknownParameter=value`,
             headers: { "Prefer": "handling=strict" },
@@ -94,7 +94,7 @@ export function runErrorHandlingParameterHandlingTests(context: ITestContext) {
             family: "LenientTest",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=LenientTest&unknownParameter=value`,
             headers: { "Prefer": "handling=lenient" },
@@ -132,14 +132,14 @@ export function runErrorHandlingParameterHandlingTests(context: ITestContext) {
 
     it("Should honor Prefer header when possible", async () => {
         // Test with strict handling
-        const strictResponse = await fetchWrapper({
+        const strictResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?unknownParameter=value`,
             headers: { "Prefer": "handling=strict" },
         });
 
         // Test with lenient handling
-        const lenientResponse = await fetchWrapper({
+        const lenientResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?unknownParameter=value`,
             headers: { "Prefer": "handling=lenient" },

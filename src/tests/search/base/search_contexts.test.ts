@@ -2,7 +2,7 @@
 
 import { ITestContext } from "../../types.ts";
 import { assertEquals, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -11,6 +11,9 @@ import { Bundle, Observation, Patient } from "npm:@types/fhir/r4.d.ts";
 import { assertTrue } from "../../../../deps.test.ts";
 
 export function runSearchContextTests(context: ITestContext) {
+    if (!context.isTextContentSearchSupported()) {
+        return;
+    }
     it("Search across all resource types", async () => {
         const patient = await createTestPatient(context, {
             family: "AllResourceTest",
@@ -19,9 +22,14 @@ export function runSearchContextTests(context: ITestContext) {
             code: "all-resource-test",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl: `?_content=AllResourceTest`,
+            relativeUrl: `_search`,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: `_content=AllResourceTest`,
         });
 
         assertEquals(response.success, true);
@@ -44,7 +52,7 @@ export function runSearchContextTests(context: ITestContext) {
             code: "type-parameter-test",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `?_type=Patient,Observation&_content=TypeParameterTest`,
@@ -67,7 +75,7 @@ export function runSearchContextTests(context: ITestContext) {
             family: "SpecificTypeTest",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=SpecificTypeTest`,
         });
@@ -86,7 +94,7 @@ export function runSearchContextTests(context: ITestContext) {
             code: "compartment-test",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient/${patient.id}/Observation?code=compartment-test`,
@@ -109,7 +117,7 @@ export function runSearchContextTests(context: ITestContext) {
             code: "wildcard-compartment-test",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient/${patient.id}/*?_content=WildcardCompartmentTest`,
@@ -135,14 +143,14 @@ export function runSearchContextTests(context: ITestContext) {
             code: "common-param-test",
         });
 
-        const validResponse = await fetchWrapper({
+        const validResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `?_type=Patient,Observation&_lastUpdated=gt2000-01-01`,
         });
 
         assertEquals(validResponse.success, true);
 
-        const invalidResponse = await fetchWrapper({
+        const invalidResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `?_type=Patient,Observation&birthdate=gt2000-01-01`,
         });

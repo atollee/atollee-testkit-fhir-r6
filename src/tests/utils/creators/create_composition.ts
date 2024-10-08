@@ -4,8 +4,10 @@ import { Composition, Reference } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
 import { createTestPractitioner } from "./create_practitioner.ts";
+import { IIdentifierOptions } from "./types.ts";
+import { createTestIdentifier } from "../resource_creators.ts";
 
-interface CompositionSectionOptions {
+interface CompositionSectionOptions extends IIdentifierOptions {
     code?: {
         coding: Array<{
             system: string;
@@ -20,7 +22,7 @@ interface CompositionSectionOptions {
     };
 }
 
-interface CompositionOptions {
+interface CompositionOptions extends IIdentifierOptions {
     status: "preliminary" | "final" | "amended" | "entered-in-error";
     type: {
         coding: Array<{
@@ -48,6 +50,7 @@ export async function createTestComposition(
         author: [{ reference: `Practitioner/${practitioner.id}` }],
         title: "Test Composition",
         section: options.sections,
+        identifier: createTestIdentifier(),
     };
 
     const response = await fetchWrapper({

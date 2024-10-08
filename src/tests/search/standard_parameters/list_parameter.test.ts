@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestAllergyIntolerance,
     createTestCondition,
@@ -33,7 +33,7 @@ export function runListParameterTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_list=${list.id}`,
         });
@@ -71,7 +71,7 @@ export function runListParameterTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?_list=${list.id}`,
         });
@@ -108,7 +108,7 @@ export function runListParameterTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_list=${list.id}&gender=female`,
         });
@@ -128,40 +128,46 @@ export function runListParameterTests(context: ITestContext) {
         );
     });
 
-    it("Should handle functional list for current allergies", async () => {
-        // We don't need to create a new patient here, as createTestAllergyIntolerance
-        // uses the valid patient ID from the context
-        const allergyIntolerance = await createTestAllergyIntolerance(context);
+    if (context.isNamedListSearchParameterSupported()) {
+        it("Should handle functional list for current allergies", async () => {
+            // We don't need to create a new patient here, as createTestAllergyIntolerance
+            // uses the valid patient ID from the context
+            const patient = await createTestPatient(context);
+            const allergyIntolerance = await createTestAllergyIntolerance(
+                context,
+                patient.id!,
+            );
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl:
-                `AllergyIntolerance?patient=${context.getValidPatientId()}&_list=$current-allergies`,
+            const response = await fetchWrapper({
+                authorized: true,
+                relativeUrl:
+                    `AllergyIntolerance?patient=${patient.id}&_list=$current-allergies`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process functional _list parameter successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertTrue(
+                bundle.entry.length > 0,
+                "Bundle should contain at least one entry",
+            );
+
+            // Optionally, verify that the created AllergyIntolerance is in the result
+            assertTrue(
+                bundle.entry.some((entry) =>
+                    entry.resource?.id === allergyIntolerance.id
+                ),
+                "Bundle should contain the created AllergyIntolerance",
+            );
         });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process functional _list parameter successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertTrue(
-            bundle.entry.length > 0,
-            "Bundle should contain at least one entry",
-        );
-
-        // Optionally, verify that the created AllergyIntolerance is in the result
-        assertTrue(
-            bundle.entry.some((entry) =>
-                entry.resource?.id === allergyIntolerance.id
-            ),
-            "Bundle should contain the created AllergyIntolerance",
-        );
-    });
+    }
 
     it("Should return empty result for non-existent List", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_list=non-existent-list-id`,
         });

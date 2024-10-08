@@ -55,6 +55,7 @@ import { runTransactionalIntegrityTests } from "./restful/transactional/transact
 import { runHistoryTests } from "./restful/history/history.test.ts";
 import { runReadTests } from "./restful/read/read.test.ts";
 import { runMinimalTest } from "./restful/base/minimal.test.ts";
+import { createTestContext } from "./utils/testContext.ts";
 
 // deno-lint-ignore require-await
 export async function testSuite(callback: () => void) {
@@ -70,29 +71,25 @@ export async function testSuite(callback: () => void) {
         }
     });
 
-    const testContext: ITestContext = {
-        getAccessToken: () => accessToken || "",
-        getBaseUrl: () => CONFIG.fhirServerUrl,
-        getValidPatientId: () => CONFIG.validPatientId,
-        getWritableValidPatient: () => CONFIG.writableValidPatientId,
-        getValidTimezone: () => "Europe/Berlin",
-        isTurtleSupported: () => false,
-        isXmlSupported: () => false,
-        isClientDefinedIdsAllowed: () => CONFIG.clientDefinedIdsAllowed,
-        isReferentialIntegritySupported: () =>
-            CONFIG.referentialIntegritySupported,
-        areReferencesVersionSpecific: () => CONFIG.referencesAreVersionSpecific,
-        isHttpSupported: () => CONFIG.httpSupported,
-        getDefaultPageSize: () => CONFIG.defaultPageSize,
-        isPaginationSupported: () => CONFIG.paginationSupported,
-    };
+    const testContext: ITestContext = createTestContext(accessToken);
 
-    const exclude = false;
-    /*
-    describe("3.2.0.1.8 conditional read", () => {
-        runConditionalReadTests(testContext);
+    const exclude = true;
+    describe("3.2.0.1.3 Resource Metadata and Versioning", () => {
+        runResourceMetadataVersioningTests(testContext);
     });
-    */
+    describe("3.2.0.1.4 Security", () => {
+        runSecurityTests(testContext);
+    });
+    describe("3.2.0.1.5 HTTP Status Codes", () => {
+        runHttpStatusCodeTests(testContext);
+    });
+    describe("3.2.0.1.6 HTTP Headers ", () => {
+        runHttpHeaderTests(testContext);
+    });
+    describe("3.2.0.1.7 Managing Return Content", () => {
+        runManagingReturnContentTests(testContext);
+    });
+
     if (!exclude) {
         describe("3.2.0.1.2 Service Base URL", () => {
             runBaseTests(testContext);

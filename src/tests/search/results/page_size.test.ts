@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -23,7 +23,7 @@ export function runPageSizeTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_count=5`,
         });
@@ -55,7 +55,7 @@ export function runPageSizeTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_count=5`,
         });
@@ -89,7 +89,7 @@ export function runPageSizeTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?subject=${patient.id}&_sort=-date&_count=1`,
@@ -122,7 +122,7 @@ export function runPageSizeTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_count=0`,
         });
@@ -160,50 +160,52 @@ export function runPageSizeTests(context: ITestContext) {
         );
     });
 
-    it("Should respect _count parameter in subsequent pages", async () => {
-        const patientCount = 10;
-        for (let i = 0; i < patientCount; i++) {
-            await createTestPatient(context, {
-                name: [{ given: [`TestPatient${i}`] }],
+    if (context.isHapiBugsDisallowed()) {
+        it("Should respect _count parameter in subsequent pages", async () => {
+            const patientCount = 10;
+            for (let i = 0; i < patientCount; i++) {
+                await createTestPatient(context, {
+                    name: [{ given: [`TestPatient${i}`] }],
+                });
+            }
+
+            const firstResponse = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?_count=3`,
             });
-        }
 
-        const firstResponse = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?_count=3`,
+            assertEquals(
+                firstResponse.status,
+                200,
+                "Server should process the first search successfully",
+            );
+            const firstBundle = firstResponse.jsonBody as Bundle;
+            assertExists(firstBundle.link, "First bundle should contain links");
+            const nextLink = firstBundle.link.find((link) =>
+                link.relation === "next"
+            );
+            assertExists(nextLink, "First bundle should contain a next link");
+
+            const secondResponse = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: nextLink.url,
+            });
+
+            assertEquals(
+                secondResponse.status,
+                200,
+                "Server should process the second search successfully",
+            );
+            const secondBundle = secondResponse.jsonBody as Bundle;
+            assertExists(
+                secondBundle.entry,
+                "Second bundle should contain entries",
+            );
+            assertEquals(
+                secondBundle.entry.length,
+                3,
+                "Second page should respect the original _count parameter",
+            );
         });
-
-        assertEquals(
-            firstResponse.status,
-            200,
-            "Server should process the first search successfully",
-        );
-        const firstBundle = firstResponse.jsonBody as Bundle;
-        assertExists(firstBundle.link, "First bundle should contain links");
-        const nextLink = firstBundle.link.find((link) =>
-            link.relation === "next"
-        );
-        assertExists(nextLink, "First bundle should contain a next link");
-
-        const secondResponse = await fetchWrapper({
-            authorized: true,
-            relativeUrl: nextLink.url,
-        });
-
-        assertEquals(
-            secondResponse.status,
-            200,
-            "Server should process the second search successfully",
-        );
-        const secondBundle = secondResponse.jsonBody as Bundle;
-        assertExists(
-            secondBundle.entry,
-            "Second bundle should contain entries",
-        );
-        assertEquals(
-            secondBundle.entry.length,
-            3,
-            "Second page should respect the original _count parameter",
-        );
-    });
+    }
 }

@@ -1,13 +1,17 @@
 import { AuditEvent } from "npm:@types/fhir";
 import { fetchWrapper } from "../fetch.ts";
 import { ITestContext } from "../../types.ts";
+import { IIdentifierOptions } from "./types.ts";
+import { createIdentifierOptions } from "../resource_creators.ts";
+
+export interface AuditEventOptions extends IIdentifierOptions {
+    entity: Array<{ reference: string }>;
+    agent: Array<{ who: { identifier: { value: string } } }>;
+}
 
 export async function createTestAuditEvent(
     _context: ITestContext,
-    options: {
-        entity: Array<{ reference: string }>;
-        agent: Array<{ who: { identifier: { value: string } } }>;
-    },
+    options: AuditEventOptions,
 ): Promise<AuditEvent> {
     const newAuditEvent: AuditEvent = {
         resourceType: "AuditEvent",
@@ -24,6 +28,7 @@ export async function createTestAuditEvent(
             observer: { identifier: { value: "test-system" } },
         },
         entity: options.entity,
+        identifier: createIdentifierOptions(options.identifier),
     };
 
     const response = await fetchWrapper({

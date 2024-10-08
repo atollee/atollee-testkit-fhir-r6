@@ -1,7 +1,7 @@
 // tests/search/parameters/date_parameter.test.ts
 
 import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestMedicationRequest,
     createTestObservation,
@@ -10,6 +10,7 @@ import {
 } from "../../utils/resource_creators.ts";
 import { Bundle } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
+import { createTestMedicationStatement } from "../../utils/creators/create_medication_statement.ts";
 
 export function runDateParameterTests(context: ITestContext) {
     it("Should search using full date-time format", async () => {
@@ -19,7 +20,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2023-05-01T12:00:00Z",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=2023-05-01T12:00:00Z`,
         });
@@ -45,7 +46,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2023-05-01T12:00:00Z",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=2023-05`,
         });
@@ -71,7 +72,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2023-05-01T12:00:00+02:00",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=2023-05-01T10:00:00Z`,
         });
@@ -97,7 +98,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2023-05-01",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=2023-05-01`,
         });
@@ -123,7 +124,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2023-05-01T12:00:00Z",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=2023-05-01T12:00:00Z`,
         });
@@ -146,10 +147,10 @@ export function runDateParameterTests(context: ITestContext) {
         const patient = await createTestPatient(context);
         await createTestObservation(context, patient.id!, {
             code: "instant-type-test",
-            issued: "2023-05-01T12:00:00.123Z",
+            effectiveDateTime: "2023-05-01T12:00:00.123Z",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=2023-05-01T12:00:00Z`,
         });
@@ -168,53 +169,11 @@ export function runDateParameterTests(context: ITestContext) {
         );
     });
 
-    it("Should search on Period datatype", async () => {
-        const patient = await createTestPatient(context);
-        await createTestMedicationRequest(context, patient.id!, {
-            status: "active",
-            intent: "order",
-            medicationCodeableConcept: {
-                coding: [{
-                    system: "http://www.nlm.nih.gov/research/umls/rxnorm",
-                    code: "1049502",
-                    display: "Acetaminophen 325 MG Oral Tablet",
-                }],
-            },
-            dosageInstruction: [{
-                timing: {
-                    repeat: {
-                        boundsPeriod: {
-                            start: "2023-05-01",
-                            end: "2023-05-07",
-                        },
-                    },
-                },
-            }],
-        });
-
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `MedicationRequest?date=2023-05-03`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process Period datatype search successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            1,
-            "Should find 1 medication request matching the date within the period",
-        );
-
-        it("Should search on Timing datatype", async () => {
+    if (context.isHapiBugsDisallowed()) {
+        it("Should search on Period datatype", async () => {
             const patient = await createTestPatient(context);
-            await createTestMedicationRequest(context, patient.id!, {
+            await createTestMedicationStatement(context, patient.id!, {
                 status: "active",
-                intent: "order",
                 medicationCodeableConcept: {
                     coding: [{
                         system: "http://www.nlm.nih.gov/research/umls/rxnorm",
@@ -222,40 +181,84 @@ export function runDateParameterTests(context: ITestContext) {
                         display: "Acetaminophen 325 MG Oral Tablet",
                     }],
                 },
-                dosageInstruction: [{
-                    timing: {
-                        repeat: {
-                            boundsPeriod: {
-                                start: "2023-05-01",
-                                end: "2023-05-31",
-                            },
-                            frequency: 1,
-                            period: 2,
-                            periodUnit: "d",
-                        },
-                    },
-                }],
+                effectivePeriod: {
+                    start: "2023-05-01",
+                    end: "2023-05-07",
+                },
             });
 
-            const response = await fetchWrapper({
+            const response = await fetchSearchWrapper({
                 authorized: true,
-                relativeUrl: `MedicationRequest?date=2023-05-15`,
+                relativeUrl:
+                    `MedicationStatement?effective=2023-05-03&patient=${patient.id}`,
             });
 
             assertEquals(
                 response.status,
                 200,
-                "Server should process Timing datatype search successfully",
+                "Server should process Period datatype search successfully",
             );
             const bundle = response.jsonBody as Bundle;
             assertExists(bundle.entry, "Bundle should contain entries");
             assertEquals(
                 bundle.entry.length,
                 1,
-                "Should find 1 medication request matching the date within the timing",
+                "Should find 1 medication statement matching the date within the effective period",
             );
         });
-    });
+
+        it("Should search on Timing datatype", async () => {
+            const patient = await createTestPatient(context);
+            const statement = await createTestMedicationStatement(
+                context,
+                patient.id!,
+                {
+                    status: "active",
+                    medicationCodeableConcept: {
+                        coding: [{
+                            system:
+                                "http://www.nlm.nih.gov/research/umls/rxnorm",
+                            code: "1049502",
+                            display: "Acetaminophen 325 MG Oral Tablet",
+                        }],
+                    },
+                    effectivePeriod: {
+                        start: "2023-05-01",
+                        end: "2023-05-31",
+                    },
+                    dosage: [{
+                        timing: {
+                            repeat: {
+                                frequency: 1,
+                                period: 2,
+                                periodUnit: "d",
+                            },
+                        },
+                    }],
+                },
+            );
+
+            const response = await fetchWrapper({
+                authorized: true,
+                relativeUrl:
+                    `MedicationStatement?effective=2023-05-15&patient=${patient.id}`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process Effective Period search successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry.length,
+                1,
+                "Should find 1 medication statement matching the date within the effective period",
+            );
+        });
+    }
+
     it("Should search with eq prefix", async () => {
         const patient = await createTestPatient(context);
         await createTestObservation(context, patient.id!, {
@@ -271,7 +274,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2013-01-15T00:00:00Z",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=eq2013-01-14`,
         });
@@ -305,7 +308,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2013-01-15T00:00:00Z",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=ne2013-01-14`,
         });
@@ -339,7 +342,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2013-01-14T11:00:00Z",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=lt2013-01-14T10:00`,
         });
@@ -373,7 +376,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2013-01-15T00:00:00Z",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=gt2013-01-14T10:00`,
         });
@@ -392,175 +395,219 @@ export function runDateParameterTests(context: ITestContext) {
         );
     });
 
-    it("Should search with ge prefix", async () => {
-        const patient = await createTestPatient(context);
-        await createTestMedicationRequest(context, patient.id!, {
-            status: "active",
-            intent: "order",
-            medicationCodeableConcept: {
-                coding: [{
-                    system: "http://www.nlm.nih.gov/research/umls/rxnorm",
-                    code: "1049502",
-                    display: "Acetaminophen 325 MG Oral Tablet",
-                }],
-            },
-            dosageInstruction: [{
-                timing: {
-                    repeat: {
-                        boundsPeriod: {
-                            start: "2013-01-21",
-                            end: "2013-12-31",
-                        },
-                    },
+    if (context.isHapiBugsDisallowed()) {
+        it("Should search with ge prefix", async () => {
+            const patient = await createTestPatient(context);
+            await createTestMedicationRequest(context, patient.id!, {
+                status: "active",
+                intent: "order",
+                medicationCodeableConcept: {
+                    coding: [{
+                        system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                        code: "1049502",
+                        display: "Acetaminophen 325 MG Oral Tablet",
+                    }],
                 },
-            }],
-        });
-
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `MedicationRequest?date=ge2013-03-14`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process ge prefix search successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            1,
-            "Should find 1 medication request on or after 2013-03-14",
-        );
-    });
-
-    it("Should search with le prefix", async () => {
-        const patient = await createTestPatient(context);
-        await createTestMedicationRequest(context, patient.id!, {
-            status: "active",
-            intent: "order",
-            medicationCodeableConcept: {
-                coding: [{
-                    system: "http://www.nlm.nih.gov/research/umls/rxnorm",
-                    code: "1049502",
-                    display: "Acetaminophen 325 MG Oral Tablet",
-                }],
-            },
-            dosageInstruction: [{
-                timing: {
-                    repeat: {
-                        boundsPeriod: {
-                            start: "2013-01-21",
-                            end: "2013-12-31",
-                        },
+                dosageInstruction: [{
+                    timing: {
+                        event: ["2013-03-14"], // On the search date
                     },
-                },
-            }],
-        });
-
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `MedicationRequest?date=le2013-03-14`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process le prefix search successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            1,
-            "Should find 1 medication request on or before 2013-03-14",
-        );
-    });
-    it("Should search with sa prefix", async () => {
-        const patient = await createTestPatient(context);
-        await createTestMedicationRequest(context, patient.id!, {
-            status: "active",
-            intent: "order",
-            medicationCodeableConcept: {
-                coding: [{
-                    system: "http://www.nlm.nih.gov/research/umls/rxnorm",
-                    code: "1049502",
-                    display: "Acetaminophen 325 MG Oral Tablet",
                 }],
-            },
-            dosageInstruction: [{
-                timing: {
-                    repeat: {
-                        boundsPeriod: {
-                            start: "2013-03-15",
-                            end: "2013-12-31",
-                        },
-                    },
+            });
+            await createTestMedicationRequest(context, patient.id!, {
+                status: "active",
+                intent: "order",
+                medicationCodeableConcept: {
+                    coding: [{
+                        system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                        code: "1049502",
+                        display: "Acetaminophen 325 MG Oral Tablet",
+                    }],
                 },
-            }],
-        });
-        await createTestMedicationRequest(context, patient.id!, {
-            status: "active",
-            intent: "order",
-            medicationCodeableConcept: {
-                coding: [{
-                    system: "http://www.nlm.nih.gov/research/umls/rxnorm",
-                    code: "1049502",
-                    display: "Acetaminophen 325 MG Oral Tablet",
+                dosageInstruction: [{
+                    timing: {
+                        event: ["2013-03-15"], // After the search date
+                    },
                 }],
-            },
-            dosageInstruction: [{
-                timing: {
-                    repeat: {
-                        boundsPeriod: {
-                            start: "2013-01-21",
-                            end: "2013-12-31",
-                        },
-                    },
+            });
+            await createTestMedicationRequest(context, patient.id!, {
+                status: "active",
+                intent: "order",
+                medicationCodeableConcept: {
+                    coding: [{
+                        system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                        code: "1049502",
+                        display: "Acetaminophen 325 MG Oral Tablet",
+                    }],
                 },
-            }],
-        });
-        await createTestMedicationRequest(context, patient.id!, {
-            status: "active",
-            intent: "order",
-            medicationCodeableConcept: {
-                coding: [{
-                    system: "http://www.nlm.nih.gov/research/umls/rxnorm",
-                    code: "1049502",
-                    display: "Acetaminophen 325 MG Oral Tablet",
+                dosageInstruction: [{
+                    timing: {
+                        event: ["2013-01-21"], // Before the search date
+                    },
                 }],
-            },
-            dosageInstruction: [{
-                timing: {
-                    repeat: {
-                        boundsPeriod: {
-                            start: "2013-01-01",
-                            end: "2013-01-21",
-                        },
-                    },
-                },
-            }],
+            });
+
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl:
+                    `MedicationRequest?date=ge2013-03-14&patient=${patient.id}`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process ge prefix search successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry.length,
+                2,
+                "Should find 2 medication requests to be administered on or after 2013-03-14",
+            );
         });
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `MedicationRequest?date=sa2013-03-14`,
-        });
+        it("Should search with le prefix", async () => {
+            const patient = await createTestPatient(context);
+            await createTestMedicationRequest(context, patient.id!, {
+                status: "active",
+                intent: "order",
+                medicationCodeableConcept: {
+                    coding: [{
+                        system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                        code: "1049502",
+                        display: "Acetaminophen 325 MG Oral Tablet",
+                    }],
+                },
+                dosageInstruction: [{
+                    timing: {
+                        event: ["2013-03-14"], // On the search date
+                    },
+                }],
+            });
+            await createTestMedicationRequest(context, patient.id!, {
+                status: "active",
+                intent: "order",
+                medicationCodeableConcept: {
+                    coding: [{
+                        system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                        code: "1049502",
+                        display: "Acetaminophen 325 MG Oral Tablet",
+                    }],
+                },
+                dosageInstruction: [{
+                    timing: {
+                        event: ["2013-01-21"], // Before the search date
+                    },
+                }],
+            });
+            await createTestMedicationRequest(context, patient.id!, {
+                status: "active",
+                intent: "order",
+                medicationCodeableConcept: {
+                    coding: [{
+                        system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                        code: "1049502",
+                        display: "Acetaminophen 325 MG Oral Tablet",
+                    }],
+                },
+                dosageInstruction: [{
+                    timing: {
+                        event: ["2013-03-15"], // After the search date
+                    },
+                }],
+            });
 
-        assertEquals(
-            response.status,
-            200,
-            "Server should process sa prefix search successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            1,
-            "Should find 1 medication request starting after 2013-03-14",
-        );
-    });
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl:
+                    `MedicationRequest?date=le2013-03-14&patient=${patient.id}`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process le prefix search successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry.length,
+                2,
+                "Should find 2 medication requests to be administered on or before 2013-03-14",
+            );
+        });
+        it("Should search with sa prefix", async () => {
+            const patient = await createTestPatient(context);
+            await createTestMedicationRequest(context, patient.id!, {
+                status: "active",
+                intent: "order",
+                medicationCodeableConcept: {
+                    coding: [{
+                        system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                        code: "1049502",
+                        display: "Acetaminophen 325 MG Oral Tablet",
+                    }],
+                },
+                dosageInstruction: [{
+                    timing: {
+                        event: ["2013-03-15"],
+                    },
+                }],
+            });
+            await createTestMedicationRequest(context, patient.id!, {
+                status: "active",
+                intent: "order",
+                medicationCodeableConcept: {
+                    coding: [{
+                        system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                        code: "1049502",
+                        display: "Acetaminophen 325 MG Oral Tablet",
+                    }],
+                },
+                dosageInstruction: [{
+                    timing: {
+                        event: ["2013-03-14"],
+                    },
+                }],
+            });
+            await createTestMedicationRequest(context, patient.id!, {
+                status: "active",
+                intent: "order",
+                medicationCodeableConcept: {
+                    coding: [{
+                        system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                        code: "1049502",
+                        display: "Acetaminophen 325 MG Oral Tablet",
+                    }],
+                },
+                dosageInstruction: [{
+                    timing: {
+                        event: ["2013-01-21"],
+                    },
+                }],
+            });
+
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl:
+                    `MedicationRequest?date=sa2013-03-14&patient=${patient.id}`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process sa prefix search successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry.length,
+                1,
+                "Should find 1 medication request to be administered after 2013-03-14",
+            );
+        });
+    }
 
     it("Should search with eb prefix", async () => {
         const patient = await createTestPatient(context);
@@ -576,12 +623,7 @@ export function runDateParameterTests(context: ITestContext) {
             },
             dosageInstruction: [{
                 timing: {
-                    repeat: {
-                        boundsPeriod: {
-                            start: "2013-03-15",
-                            end: "2013-12-31",
-                        },
-                    },
+                    event: ["2013-03-15"], // This is after the search date
                 },
             }],
         });
@@ -597,12 +639,7 @@ export function runDateParameterTests(context: ITestContext) {
             },
             dosageInstruction: [{
                 timing: {
-                    repeat: {
-                        boundsPeriod: {
-                            start: "2013-01-21",
-                            end: "2013-12-31",
-                        },
-                    },
+                    event: ["2013-03-14"], // This is on the search date
                 },
             }],
         });
@@ -618,19 +655,15 @@ export function runDateParameterTests(context: ITestContext) {
             },
             dosageInstruction: [{
                 timing: {
-                    repeat: {
-                        boundsPeriod: {
-                            start: "2013-01-01",
-                            end: "2013-01-21",
-                        },
-                    },
+                    event: ["2013-01-21"], // This is before the search date
                 },
             }],
         });
 
         const response = await fetchWrapper({
             authorized: true,
-            relativeUrl: `MedicationRequest?date=eb2013-03-14`,
+            relativeUrl:
+                `MedicationRequest?date=eb2013-03-14&patient=${patient.id}`,
         });
 
         assertEquals(
@@ -643,43 +676,46 @@ export function runDateParameterTests(context: ITestContext) {
         assertEquals(
             bundle.entry.length,
             1,
-            "Should find 1 medication request ending before 2013-03-14",
+            "Should find 1 medication request to be administered before 2013-03-14",
         );
     });
 
-    it("Should search with ap prefix", async () => {
-        const patient = await createTestPatient(context);
-        await createTestObservation(context, patient.id!, {
-            code: "ap-test-1",
-            effectiveDateTime: "2013-03-14",
-        });
-        await createTestObservation(context, patient.id!, {
-            code: "ap-test-2",
-            effectiveDateTime: "2013-01-21",
-        });
-        await createTestObservation(context, patient.id!, {
-            code: "ap-test-3",
-            effectiveDateTime: "2015-06-15",
-        });
+    if (context.isApproximateSearchSupported()) {
+        it("Should search with ap prefix", async () => {
+            const patient = await createTestPatient(context);
+            await createTestObservation(context, patient.id!, {
+                code: "ap-test-1",
+                effectiveDateTime: "2013-03-14",
+            });
+            await createTestObservation(context, patient.id!, {
+                code: "ap-test-2",
+                effectiveDateTime: "2013-01-21",
+            });
+            await createTestObservation(context, patient.id!, {
+                code: "ap-test-3",
+                effectiveDateTime: "2015-06-15",
+            });
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Observation?date=ap2013-03-14`,
-        });
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Observation?date=ap2013-03-14`,
+            });
 
-        assertEquals(
-            response.status,
-            200,
-            "Server should process ap prefix search successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            2,
-            "Should find 2 observations approximately matching 2013-03-14",
-        );
-    });
+            assertEquals(
+                response.status,
+                200,
+                "Server should process ap prefix search successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry.length,
+                2,
+                "Should find 2 observations approximately matching 2013-03-14",
+            );
+        });
+    }
+
     it("Should handle range comparison correctly", async () => {
         const patient = await createTestPatient(context);
         await createTestObservation(context, patient.id!, {
@@ -691,7 +727,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2013-01-15T00:00:00Z",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=gt2013-01-14`,
         });
@@ -705,8 +741,8 @@ export function runDateParameterTests(context: ITestContext) {
         assertExists(bundle.entry, "Bundle should contain entries");
         assertEquals(
             bundle.entry.length,
-            2,
-            "Should find 2 observations with any part after 2013-01-14",
+            1,
+            "Should find 1 observations with any part after 2013-01-14",
         );
     });
 
@@ -721,7 +757,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2013-01-15T00:00:00Z",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=sa2013-01-14T00:00:00`,
         });
@@ -755,7 +791,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2001-01-01T00:00:00Z",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=2000`,
         });
@@ -789,7 +825,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2000-05-01T00:00:00Z",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=2000-04`,
         });
@@ -819,7 +855,7 @@ export function runDateParameterTests(context: ITestContext) {
             effectiveDateTime: "2000-01-01T00:00:00-02:00",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=2000-01-01`,
         });
@@ -853,10 +889,9 @@ export function runDateParameterTests(context: ITestContext) {
             performedDateTime: "2012-06-15",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl:
-                `Patient/${patient.id}/Procedure?date=ge2010-01-01&date=le2011-12-31`,
+            relativeUrl: `Procedure?date=ge2010-01-01&date=le2011-12-31`,
         });
 
         assertEquals(

@@ -1,5 +1,5 @@
 import { assertEquals, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import { createTestPatient } from "../../utils/resource_creators.ts";
 import { Bundle, Patient } from "npm:@types/fhir/r4.d.ts";
 import { assertTrue } from "../../../../deps.test.ts";
@@ -14,7 +14,7 @@ export function runMatchingAndSubElementsTests(context: ITestContext) {
         });
 
         // Search for the patient using the family name
-        const responseFamilyName = await fetchWrapper({
+        const responseFamilyName = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?name=${patient.name?.[0].family}`,
         });
@@ -33,7 +33,7 @@ export function runMatchingAndSubElementsTests(context: ITestContext) {
         );
 
         // Search for the patient using the given name
-        const responseGivenName = await fetchWrapper({
+        const responseGivenName = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?name=${patient.name?.[0].given?.[0]}`,
         });
@@ -72,7 +72,7 @@ export function runMatchingAndSubElementsTests(context: ITestContext) {
         }];
 
         // Update the patient with the new address
-        await fetchWrapper({
+        await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient/${patient.id}`,
             method: "PUT",
@@ -80,7 +80,7 @@ export function runMatchingAndSubElementsTests(context: ITestContext) {
         });
 
         // Search for the patient using the city
-        const responseCity = await fetchWrapper({
+        const responseCity = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?address-city=${patient.address?.[0].city}`,
         });
@@ -99,7 +99,7 @@ export function runMatchingAndSubElementsTests(context: ITestContext) {
         );
 
         // Search for the patient using the postal code
-        const responsePostalCode = await fetchWrapper({
+        const responsePostalCode = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?address-postalcode=${
                 patient.address?.[0].postalCode

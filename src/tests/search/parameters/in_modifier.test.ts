@@ -1,7 +1,7 @@
 // tests/search/parameters/in_modifier.test.ts
 
 import { assertEquals, assertExists, assertTrue, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import { createTestCondition } from "../../utils/resource_creators.ts";
 import { Bundle, Condition, OperationOutcome } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
@@ -29,7 +29,7 @@ export function runInModifierTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?code:in=ValueSet/${valueSetId}`,
         });
@@ -62,7 +62,7 @@ export function runInModifierTests(context: ITestContext) {
             }
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?code:in=${encodedSnomedSubset}`,
         });
@@ -74,7 +74,7 @@ export function runInModifierTests(context: ITestContext) {
     });
 
     it("Should reject in modifier on non-token search parameters", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?birthdate:in=ValueSet/123`,
         });
@@ -94,7 +94,7 @@ export function runInModifierTests(context: ITestContext) {
             }
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?code:in=${encodeURIComponent(logicalUrl)}`,
         });
@@ -106,7 +106,7 @@ export function runInModifierTests(context: ITestContext) {
     });
 
     it("Should not allow in modifier with boolean token parameters", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?active:in=ValueSet/123`,
         });

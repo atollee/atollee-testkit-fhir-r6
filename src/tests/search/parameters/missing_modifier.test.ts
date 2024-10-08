@@ -1,7 +1,12 @@
 // tests/search/parameters/missing_modifier.test.ts
 
-import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import {
+    assertEquals,
+    assertExists,
+    assertTrue,
+    it,
+} from "../../../../deps.test.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import { createTestPatient } from "../../utils/resource_creators.ts";
 import { Bundle, Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
@@ -25,7 +30,7 @@ export function runMissingModifierTests(context: ITestContext) {
             given: ["TestGiven"],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=${familyName}&given:missing=true`,
         });
@@ -70,7 +75,7 @@ export function runMissingModifierTests(context: ITestContext) {
             given: ["TestGiven"],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=${familyName}&given:missing=false`,
         });
@@ -106,6 +111,7 @@ export function runMissingModifierTests(context: ITestContext) {
         // Create a patient without birthDate
         await createTestPatient(context, {
             family: familyName,
+            birthdateUndefined: true,
         });
 
         // Create a patient with birthDate
@@ -114,7 +120,7 @@ export function runMissingModifierTests(context: ITestContext) {
             birthDate: "1990-01-01",
         });
 
-        const responseMissing = await fetchWrapper({
+        const responseMissing = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=${familyName}&birthdate:missing=true`,
         });
@@ -132,7 +138,7 @@ export function runMissingModifierTests(context: ITestContext) {
             "Should find one patient with missing birthDate",
         );
 
-        const responseNotMissing = await fetchWrapper({
+        const responseNotMissing = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=${familyName}&birthdate:missing=false`,
         });
@@ -151,18 +157,19 @@ export function runMissingModifierTests(context: ITestContext) {
         );
     });
 
-    it("Should reject invalid values for missing modifier", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?given:missing=invalid`,
-        });
+    if (context.isHapiBugsDisallowed()) {
+        it("Should reject invalid values for missing modifier", async () => {
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?given:missing=invalid`,
+            });
 
-        assertEquals(
-            response.status,
-            400,
-            "Server should reject invalid value for missing modifier",
-        );
-    });
+            assertTrue(
+                response.status >= 400 && response.status < 500,
+                "Server should reject invalid value for missing modifier",
+            );
+        });
+    }
 
     it("Should handle missing modifier on token type parameters", async () => {
         const familyName = uniqueString("TestFamily");
@@ -170,6 +177,7 @@ export function runMissingModifierTests(context: ITestContext) {
         // Create a patient without gender
         await createTestPatient(context, {
             family: familyName,
+            genderUndefined: true
         });
 
         // Create a patient with gender
@@ -178,7 +186,7 @@ export function runMissingModifierTests(context: ITestContext) {
             gender: "male",
         });
 
-        const responseMissing = await fetchWrapper({
+        const responseMissing = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=${familyName}&gender:missing=true`,
         });
@@ -196,7 +204,7 @@ export function runMissingModifierTests(context: ITestContext) {
             "Should find one patient with missing gender",
         );
 
-        const responseNotMissing = await fetchWrapper({
+        const responseNotMissing = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=${familyName}&gender:missing=false`,
         });

@@ -2,10 +2,14 @@
 
 import { fetchWrapper } from "../../utils/fetch.ts";
 import { ITestContext } from "../../types.ts";
-import {assertEquals, assertExists, assertTrue, it} from "../../../../deps.test.ts";
+import {
+    assertEquals,
+    assertExists,
+    assertTrue,
+    it,
+} from "../../../../deps.test.ts";
 
 export function runConditionalReadTests(context: ITestContext) {
-
     it("Conditional Read - If-Modified-Since with unchanged resource", async () => {
         const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
         // First, get the current resource and its Last-Modified date
@@ -15,41 +19,70 @@ export function runConditionalReadTests(context: ITestContext) {
         });
 
         const lastModified = initialResponse.headers.get("Last-Modified");
-        assertExists(lastModified, "Initial response should include a Last-Modified header");
+        assertExists(
+            lastModified,
+            "Initial response should include a Last-Modified header",
+        );
 
         // Now, perform a conditional read with the same Last-Modified date
         const conditionalResponse = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
             headers: {
-                "If-Modified-Since": lastModified
-            }
+                "If-Modified-Since": lastModified,
+            },
         });
 
-        assertEquals(conditionalResponse.status === 304 || conditionalResponse.status === 200, true,
-            "Server should return either 304 Not Modified or 200 OK with full content");
+        assertEquals(
+            conditionalResponse.status === 304 ||
+                conditionalResponse.status === 200,
+            true,
+            "Server should return either 304 Not Modified or 200 OK with full content",
+        );
 
         if (conditionalResponse.status === 304) {
-            assertEquals(conditionalResponse.jsonBody, null, "304 response should have no body");
+            assertEquals(
+                conditionalResponse.jsonBody,
+                null,
+                "304 response should have no body",
+            );
         } else {
-            assertExists(conditionalResponse.jsonBody, "200 response should include full content");
+            assertExists(
+                conditionalResponse.jsonBody,
+                "200 response should include full content",
+            );
         }
     });
 
     it("Conditional Read - If-Modified-Since with changed resource", async () => {
         const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
+        const initialResponse = await fetchWrapper({
+            authorized: true,
+            relativeUrl: `Patient/${validPatientId}`,
+        });
+
+        const lastModified = initialResponse.headers.get("Last-Modified");
+
+        const pastModifiedTime = lastModified
+            ? new Date(lastModified).getTime()
+            : Date.now();
+
         // Use a date in the past to ensure the resource has been modified since then
-        const pastDate = new Date(Date.now() - 86400000).toUTCString(); // 24 hours ago
+        const pastDate = new Date(pastModifiedTime - 86400000).toUTCString(); // 24 hours ago
 
         const response = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
             headers: {
-                "If-Modified-Since": pastDate
-            }
+                "If-Modified-Since": pastDate,
+            },
         });
 
-        assertEquals(response.status, 200, "Server should return 200 OK with full content for modified resource");
+        assertEquals(
+            response.status,
+            200,
+            "Server should return 200 OK with full content for modified resource",
+        );
         assertExists(response.jsonBody, "Response should include full content");
     });
 
@@ -69,17 +102,28 @@ export function runConditionalReadTests(context: ITestContext) {
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
             headers: {
-                "If-None-Match": etag
-            }
+                "If-None-Match": etag,
+            },
         });
 
-        assertEquals(conditionalResponse.status === 304 || conditionalResponse.status === 200, true,
-            "Server should return either 304 Not Modified or 200 OK with full content");
+        assertEquals(
+            conditionalResponse.status === 304 ||
+                conditionalResponse.status === 200,
+            true,
+            "Server should return either 304 Not Modified or 200 OK with full content",
+        );
 
         if (conditionalResponse.status === 304) {
-            assertTrue(conditionalResponse.jsonBody === null || conditionalResponse.jsonBody === undefined, "304 response should have no body");
+            assertTrue(
+                conditionalResponse.jsonBody === null ||
+                    conditionalResponse.jsonBody === undefined,
+                "304 response should have no body",
+            );
         } else {
-            assertExists(conditionalResponse.jsonBody, "200 response should include full content");
+            assertExists(
+                conditionalResponse.jsonBody,
+                "200 response should include full content",
+            );
         }
     });
 
@@ -91,11 +135,15 @@ export function runConditionalReadTests(context: ITestContext) {
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
             headers: {
-                "If-None-Match": nonMatchingEtag
-            }
+                "If-None-Match": nonMatchingEtag,
+            },
         });
 
-        assertEquals(response.status, 200, "Server should return 200 OK with full content for non-matching ETag");
+        assertEquals(
+            response.status,
+            200,
+            "Server should return 200 OK with full content for non-matching ETag",
+        );
         assertExists(response.jsonBody, "Response should include full content");
     });
 
@@ -110,7 +158,10 @@ export function runConditionalReadTests(context: ITestContext) {
         const etag = initialResponse.headers.get("ETag");
         const lastModified = initialResponse.headers.get("Last-Modified");
         assertExists(etag, "Initial response should include an ETag header");
-        assertExists(lastModified, "Initial response should include a Last-Modified header");
+        assertExists(
+            lastModified,
+            "Initial response should include a Last-Modified header",
+        );
 
         // Now, perform a conditional read with both headers
         const conditionalResponse = await fetchWrapper({
@@ -118,17 +169,28 @@ export function runConditionalReadTests(context: ITestContext) {
             relativeUrl: `Patient/${validPatientId}`,
             headers: {
                 "If-Modified-Since": lastModified,
-                "If-None-Match": etag
-            }
+                "If-None-Match": etag,
+            },
         });
 
-        assertEquals(conditionalResponse.status === 304 || conditionalResponse.status === 200, true,
-            "Server should return either 304 Not Modified or 200 OK with full content");
+        assertEquals(
+            conditionalResponse.status === 304 ||
+                conditionalResponse.status === 200,
+            true,
+            "Server should return either 304 Not Modified or 200 OK with full content",
+        );
 
         if (conditionalResponse.status === 304) {
-            assertTrue(conditionalResponse.jsonBody === null || conditionalResponse.jsonBody === undefined, "304 response should have no body");
+            assertTrue(
+                conditionalResponse.jsonBody === null ||
+                    conditionalResponse.jsonBody === undefined,
+                "304 response should have no body",
+            );
         } else {
-            assertExists(conditionalResponse.jsonBody, "200 response should include full content");
+            assertExists(
+                conditionalResponse.jsonBody,
+                "200 response should include full content",
+            );
         }
     });
 }

@@ -109,6 +109,7 @@ import { runServerConformanceTests } from "./conformance/server_conformance.test
 import { runSearchResultCurrencyTests } from "./currency/search_result_currency.test.ts";
 import { mainDescribe } from "../utils/bdd/mod.ts";
 import { updateRandomText } from "../utils/resource_creators.ts";
+import { createTestContext } from "../utils/testContext.ts";
 
 export async function searchSuite(callback: () => void) {
     let accessToken: string | undefined;
@@ -126,27 +127,8 @@ export async function searchSuite(callback: () => void) {
     beforeEach(() => {
         updateRandomText();
     });
-    const testContext: ITestContext = {
-        getAccessToken: () => accessToken || "",
-        getBaseUrl: () => CONFIG.fhirServerUrl,
-        getValidPatientId: () => CONFIG.validPatientId,
-        getWritableValidPatient: () => CONFIG.writableValidPatientId,
-        getValidTimezone: () => "Europe/Berlin",
-        isTurtleSupported: () => false,
-        isXmlSupported: () => false,
-        isClientDefinedIdsAllowed: () => CONFIG.clientDefinedIdsAllowed,
-        isReferentialIntegritySupported: () =>
-            CONFIG.referentialIntegritySupported,
-        areReferencesVersionSpecific: () => CONFIG.referencesAreVersionSpecific,
-        isHttpSupported: () => CONFIG.httpSupported,
-        getDefaultPageSize: () => CONFIG.defaultPageSize,
-        isPaginationSupported: () => CONFIG.paginationSupported,
-    };
-
-    describe("3.2.1.2.2 Search Inputs", () => {
-        runSearchInputTests(testContext);
-    });
-const exclude = true;
+    const testContext: ITestContext = createTestContext(accessToken);
+    const exclude = false;
     if (!exclude) {
         describe("3.2.1.2.2 Search Inputs", () => {
             runSearchInputTests(testContext);
@@ -200,6 +182,7 @@ const exclude = true;
             runSearchingMultipleValuesTests(testContext);
             runJoiningMultipleValuesTests(testContext);
         });
+
         describe("3.2.1.5.5 Modifiers", () => {
             runModifiersTests(testContext);
         });
@@ -215,6 +198,7 @@ const exclude = true;
         describe("3.2.1.5.5.1.4 above with uri type search parameters", () => {
             runAboveModifierUriTests(testContext);
         });
+
         describe("3.2.1.5.5.2.1 below with reference type search parameters - hierarchical searches", () => {
             runBelowModifierReferenceHierarchicalTests(testContext);
         });
@@ -224,6 +208,7 @@ const exclude = true;
         describe("3.2.1.5.5.2.3 below with token type search parameters", () => {
             runBelowModifierTokenTests(testContext);
         });
+
         describe("3.2.1.5.5.2.4 below with uri type search parameters", () => {
             runBelowModifierUriTests(testContext);
         });
@@ -269,6 +254,7 @@ const exclude = true;
         describe("3.2.1.5.6 Prefixes", () => {
             runPrefixTests(testContext);
         });
+        // ---
         describe("3.2.1.5.7 Escaping Search Parameters", () => {
             runEscapingSearchParametersTests(testContext);
         });

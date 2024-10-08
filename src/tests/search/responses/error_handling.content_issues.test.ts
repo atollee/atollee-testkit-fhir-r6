@@ -1,14 +1,14 @@
 // tests/search/responses/error_handling.content_issues.test.ts
 
 import { assertEquals, assertTrue, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import { createTestPatient } from "../../utils/resource_creators.ts";
 import { Bundle, OperationOutcome } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 
 export function runErrorHandlingContentIssuesTests(context: ITestContext) {
     it("Should return an error for syntactically incorrect parameter content", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?birthdate=not-a-date`,
         });
@@ -39,7 +39,7 @@ export function runErrorHandlingContentIssuesTests(context: ITestContext) {
     });
 
     it("Should return empty result set for logically incorrect but syntactically valid parameter", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?code=loinc|non-existent-code`,
         });
@@ -52,11 +52,15 @@ export function runErrorHandlingContentIssuesTests(context: ITestContext) {
 
         const bundle = response.jsonBody as Bundle;
         assertEquals(bundle.total, 0, "Bundle should have zero total results");
-        assertEquals(bundle.entry?.length, 0, "Bundle should have no entries");
+        assertEquals(
+            bundle.entry?.length ?? 0,
+            0,
+            "Bundle should have no entries",
+        );
     });
 
     it("Should optionally include OperationOutcome with hints/warnings in empty result set", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?patient.identifier=http://example.com/fhir/identifier/mrn|non-existent-mrn`,
@@ -91,15 +95,11 @@ export function runErrorHandlingContentIssuesTests(context: ITestContext) {
                     "OperationOutcome should contain a warning or information issue",
                 );
             }
-        } else {
-            console.log(
-                "No OperationOutcome included in empty result set. This is allowed but not required.",
-            );
         }
     });
 
     it("Should honor 'strict' handling preference for unknown parameters", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?unknownParameter=value`,
             headers: { "Prefer": "handling=strict" },
@@ -130,44 +130,25 @@ export function runErrorHandlingContentIssuesTests(context: ITestContext) {
         }
     });
 
-    it("Should honor 'lenient' handling preference for unknown parameters", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?unknownParameter=value`,
-            headers: { "Prefer": "handling=lenient" },
+    if (context.isLenientSearchHandlingSupported()) {
+        it("Should honor 'lenient' handling preference for unknown parameters", async () => {
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?unknownParameter=value`,
+                headers: { "Prefer": "handling=lenient" },
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should return 200 OK for unknown parameter in lenient mode",
+            );
+
+            const bundle = response.jsonBody as Bundle;
+            assertTrue(
+                bundle.total !== undefined,
+                "Bundle should have a total property",
+            );
         });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should return 200 OK for unknown parameter in lenient mode",
-        );
-
-        const bundle = response.jsonBody as Bundle;
-        assertTrue(
-            bundle.total !== undefined,
-            "Bundle should have a total property",
-        );
-    });
-
-    it("Should ignore empty parameters", async () => {
-        await createTestPatient(context, { family: "EmptyParamTest" });
-
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?family=EmptyParamTest&emptyParam=`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should return 200 OK when ignoring empty parameters",
-        );
-
-        const bundle = response.jsonBody as Bundle;
-        assertTrue(
-            bundle.total! > 0,
-            "Bundle should have results despite empty parameter",
-        );
-    });
+    }
 }

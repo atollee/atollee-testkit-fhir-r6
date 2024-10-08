@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestGroup,
     createTestObservation,
@@ -30,7 +30,7 @@ export function runReferenceSearchTests(context: ITestContext) {
             unit: "mg/dL",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?subject=${patient.id}`,
         });
@@ -65,7 +65,7 @@ export function runReferenceSearchTests(context: ITestContext) {
             unit: "mg/dL",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?subject=Patient/${patient.id}`,
         });
@@ -102,7 +102,7 @@ export function runReferenceSearchTests(context: ITestContext) {
             subject: { reference: absoluteUrl },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?subject=${
                 encodeURIComponent(absoluteUrl)
@@ -160,7 +160,7 @@ export function runReferenceSearchTests(context: ITestContext) {
             subject: { reference: `Group/${group.id}` },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?subject=${patient.id}`,
         });
@@ -214,7 +214,7 @@ export function runReferenceSearchTests(context: ITestContext) {
             subject: { reference: `Practitioner/${practitioner.id}` },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?subject:Patient=${patient.id}`,
         });
@@ -255,7 +255,7 @@ export function runReferenceSearchTests(context: ITestContext) {
             unit: "mg/dL",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?subject:identifier=http://acme.org/fhir/identifier/mrn|${patientMRN}`,

@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -34,7 +34,7 @@ export function runQuantitySearchTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?value-quantity=5.4|http://unitsofmeasure.org|mg`,
@@ -85,7 +85,7 @@ export function runQuantitySearchTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?value-quantity=5.40e-3|http://unitsofmeasure.org|g`,
@@ -136,7 +136,7 @@ export function runQuantitySearchTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?value-quantity=5.4||mg`,
         });
@@ -189,7 +189,7 @@ export function runQuantitySearchTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?value-quantity=5.4`,
         });
@@ -236,7 +236,7 @@ export function runQuantitySearchTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?value-quantity=le5.4|http://unitsofmeasure.org|mg`,
@@ -289,7 +289,7 @@ export function runQuantitySearchTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?value-quantity=ap5.4|http://unitsofmeasure.org|mg`,

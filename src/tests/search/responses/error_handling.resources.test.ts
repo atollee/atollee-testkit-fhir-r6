@@ -1,14 +1,14 @@
 // tests/search/responses/error_handling.resources.test.ts
 
 import { assertEquals, assertTrue, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import { createTestPatient } from "../../utils/resource_creators.ts";
 import { Bundle, OperationOutcome } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 
 export function runErrorHandlingResourcesTests(context: ITestContext) {
     it("Should handle search for non-existent resource by id", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?_id=non-existent-id`,
         });
@@ -23,7 +23,7 @@ export function runErrorHandlingResourcesTests(context: ITestContext) {
     });
 
     it("Should handle search with non-existent patient identifier", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?patient.identifier=http://example.com/fhir/mrn|non-existent-mrn`,
@@ -39,7 +39,7 @@ export function runErrorHandlingResourcesTests(context: ITestContext) {
     });
 
     it("Should handle search with unknown code", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?code=loinc|unknown-code`,
         });
@@ -54,9 +54,9 @@ export function runErrorHandlingResourcesTests(context: ITestContext) {
     });
 
     it("Should handle search with out of scope date", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl: `Condition?onset=le1800`,
+            relativeUrl: `Condition?onset-info=le1800`,
         });
 
         assertEquals(
@@ -69,7 +69,7 @@ export function runErrorHandlingResourcesTests(context: ITestContext) {
     });
 
     it("Should handle search with illegal/unsupported modifier", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?onset:unsupported=1995`,
         });
@@ -95,7 +95,7 @@ export function runErrorHandlingResourcesTests(context: ITestContext) {
     });
 
     it("Should handle search with incorrectly formatted date", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?onset=23-May-2009`,
         });
@@ -121,7 +121,7 @@ export function runErrorHandlingResourcesTests(context: ITestContext) {
     });
 
     it("Should handle search with unknown parameter", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?unknownParameter=value`,
         });

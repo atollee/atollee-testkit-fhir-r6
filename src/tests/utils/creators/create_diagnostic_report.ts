@@ -1,10 +1,16 @@
 import { DiagnosticReport } from "npm:@types/fhir/r4.d.ts";
 import { fetchWrapper } from "../fetch.ts";
 import { ITestContext } from "../../types.ts";
+import { IIdentifierOptions } from "./types.ts";
+import { createIdentifierOptions } from "./utils.ts";
+
+export interface DiagnosticReportOptions extends IIdentifierOptions {
+    subject: { reference: string };
+}
 
 export async function createTestDiagnosticReport(
     _context: ITestContext,
-    options: { subject: { reference: string } },
+    options: DiagnosticReportOptions,
 ): Promise<DiagnosticReport> {
     const newDiagnosticReport: DiagnosticReport = {
         resourceType: "DiagnosticReport",
@@ -19,6 +25,7 @@ export async function createTestDiagnosticReport(
         },
         subject: options.subject,
         issued: new Date().toISOString(),
+        identifier: createIdentifierOptions(options.identifier),
     };
 
     const response = await fetchWrapper({

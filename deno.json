@@ -9,10 +9,11 @@
     "experimentalDecorators": true
   },
   "tasks": {
-    "test:restful": "deno test --allow-all --trace-leaks ./src/runner.ts --",
-    "test:restful:junit": "deno test --allow-all --trace-leaks ./src/runner.ts --reporter junit",
-    "test:restful:json": "deno test --allow-all --trace-leaks ./src/runner.ts -- --store",
-    "test:restful:init": "deno test --allow-all --trace-leaks ./src/init/suite.ts",
-    "test:search": "deno test --allow-all --trace-leaks ./src/runner.ts --"
+    "test:restful": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t restful",
+    "test:restful:junit": "deno test --allow-all --trace-leaks ./src/runner.ts --reporter junit -- -t restful",
+    "test:restful:json": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t restful --store",
+    "test:restful:init": "deno test --allow-all --trace-leaks ./src/init/suite.ts -- -t restful",
+    "test:search": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t search",
+    "test:search:json": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t search --store"
   }
 }

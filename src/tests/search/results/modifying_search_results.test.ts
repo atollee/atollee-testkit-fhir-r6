@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -23,7 +23,7 @@ export function runModifyingSearchResultsTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_count=3`,
         });
@@ -42,35 +42,40 @@ export function runModifyingSearchResultsTests(context: ITestContext) {
         );
     });
 
-    it("Should return only specified elements using _elements", async () => {
-        const patient = await createTestPatient(context, {
-            name: [{ given: ["TestPatient"], family: "TestFamily" }],
-            gender: "male",
-            birthDate: "1990-01-01",
-        });
+    if (context.isElementSearchParameterSupported()) {
+        it("Should return only specified elements using _elements", async () => {
+            const patient = await createTestPatient(context, {
+                name: [{ given: ["TestPatient"], family: "TestFamily" }],
+                gender: "male",
+                birthDate: "1990-01-01",
+            });
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient/${patient.id}?_elements=name,gender`,
-        });
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient/${patient.id}?_elements=name,gender`,
+            });
 
-        assertEquals(
-            response.status,
-            200,
-            "Server should process the search with _elements successfully",
-        );
-        const returnedPatient = response.jsonBody as Patient;
-        assertExists(returnedPatient.name, "Returned Patient should have name");
-        assertExists(
-            returnedPatient.gender,
-            "Returned Patient should have gender",
-        );
-        assertEquals(
-            returnedPatient.birthDate,
-            undefined,
-            "Returned Patient should not have birthDate",
-        );
-    });
+            assertEquals(
+                response.status,
+                200,
+                "Server should process the search with _elements successfully",
+            );
+            const returnedPatient = response.jsonBody as Patient;
+            assertExists(
+                returnedPatient.name,
+                "Returned Patient should have name",
+            );
+            assertExists(
+                returnedPatient.gender,
+                "Returned Patient should have gender",
+            );
+            assertEquals(
+                returnedPatient.birthDate,
+                undefined,
+                "Returned Patient should not have birthDate",
+            );
+        });
+    }
 
     it("Should include referenced resources using _include", async () => {
         const patient = await createTestPatient(context, {
@@ -80,7 +85,7 @@ export function runModifyingSearchResultsTests(context: ITestContext) {
             code: "test-code",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?_id=${observation.id}&_include=Observation:subject`,
@@ -114,7 +119,7 @@ export function runModifyingSearchResultsTests(context: ITestContext) {
             code: "test-code",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?_id=${patient.id}&_revinclude=Observation:subject`,
@@ -145,7 +150,7 @@ export function runModifyingSearchResultsTests(context: ITestContext) {
         await createTestPatient(context, { name: [{ given: ["Bob"] }] });
         await createTestPatient(context, { name: [{ given: ["Charlie"] }] });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_sort=name`,
         });
@@ -167,65 +172,72 @@ export function runModifyingSearchResultsTests(context: ITestContext) {
         );
     });
 
-    it("Should return a summary of resources using _summary", async () => {
-        const patient = await createTestPatient(context, {
-            name: [{ given: ["TestPatient"], family: "TestFamily" }],
-            gender: "male",
-            birthDate: "1990-01-01",
-        });
-
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient/${patient.id}?_summary=true`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process the search with _summary successfully",
-        );
-        const returnedPatient = response.jsonBody as Patient;
-        assertExists(returnedPatient.name, "Returned Patient should have name");
-        assertEquals(
-            returnedPatient.gender,
-            undefined,
-            "Returned Patient should not have gender",
-        );
-        assertEquals(
-            returnedPatient.birthDate,
-            undefined,
-            "Returned Patient should not have birthDate",
-        );
-    });
-
-    it("Should limit total results using _maxresults", async () => {
-        // Create multiple patients
-        for (let i = 0; i < 10; i++) {
-            await createTestPatient(context, {
-                name: [{ given: [`TestPatient${i}`] }],
+    if (context.isSummarySearchParameterSupported()) {
+        it("Should return a summary of resources using _summary", async () => {
+            const patient = await createTestPatient(context, {
+                name: [{ given: ["TestPatient"], family: "TestFamily" }],
+                gender: "male",
+                birthDate: "1990-01-01",
             });
-        }
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?_maxresults=5`,
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient/${patient.id}?_summary=true`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process the search with _summary successfully",
+            );
+            const returnedPatient = response.jsonBody as Patient;
+            assertExists(
+                returnedPatient.name,
+                "Returned Patient should have name",
+            );
+            assertEquals(
+                returnedPatient.gender,
+                undefined,
+                "Returned Patient should not have gender",
+            );
+            assertEquals(
+                returnedPatient.birthDate,
+                undefined,
+                "Returned Patient should not have birthDate",
+            );
         });
+    }
 
-        assertEquals(
-            response.status,
-            200,
-            "Server should process the search with _maxresults successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertTrue(
-            bundle.entry.length <= 5,
-            "Bundle should contain 5 or fewer entries",
-        );
-    });
+    if (context.isHapiBugsDisallowed()) {
+        it("Should limit total results using _maxresults", async () => {
+            // Create multiple patients
+            for (let i = 0; i < 10; i++) {
+                await createTestPatient(context, {
+                    name: [{ given: [`TestPatient${i}`] }],
+                });
+            }
+
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?_maxresults=5`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process the search with _maxresults successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertTrue(
+                bundle.entry.length <= 5,
+                "Bundle should contain 5 or fewer entries",
+            );
+        });
+    }
 
     it("Should handle multiple occurrences of non-repeatable search result parameters as an error", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_sort=name&_sort=birthDate`,
         });

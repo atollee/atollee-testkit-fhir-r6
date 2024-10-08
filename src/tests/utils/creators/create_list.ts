@@ -3,8 +3,10 @@
 import { List, Reference } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { createIdentifierOptions } from "./utils.ts";
+import { IIdentifierOptions } from "./types.ts";
 
-export interface ListOptions {
+export interface ListOptions extends IIdentifierOptions {
     status?: "current" | "retired" | "entered-in-error";
     mode?: "working" | "snapshot" | "changes";
     title?: string;
@@ -23,6 +25,7 @@ export async function createTestList(
         mode: options.mode || "working",
         title: options.title || "no title",
         entry: options.entry,
+        identifier: createIdentifierOptions(options.identifier),
     };
 
     const response = await fetchWrapper({

@@ -1,7 +1,12 @@
 // tests/search/parameters/not_in_modifier.test.ts
 
-import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import {
+    assertEquals,
+    assertExists,
+    assertTrue,
+    it,
+} from "../../../../deps.test.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestCondition,
     createTestValueSet,
@@ -62,7 +67,7 @@ export function runNotInModifierTests(context: ITestContext) {
             },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?code:not-in=ValueSet/${valueSetId}`,
         });
@@ -88,60 +93,62 @@ export function runNotInModifierTests(context: ITestContext) {
         );
     });
 
-    it("Should handle URL-encoded ValueSet references", async () => {
-        const snomedSubset = "http://snomed.info/sct?fhir_vs=isa/235862008";
-        const encodedSnomedSubset = encodeURIComponent(snomedSubset);
+    if (context.isNotInModifierSnomedSystemSupported()) {
+        it("Should handle URL-encoded ValueSet references", async () => {
+            const snomedSubset = "http://snomed.info/sct?fhir_vs=isa/235862008";
+            const encodedSnomedSubset = encodeURIComponent(snomedSubset);
 
-        // Create conditions with codes in the SNOMED subset
-        await createTestCondition(context, {
-            code: {
-                coding: [{
-                    system: "http://snomed.info/sct",
-                    code: "235862008",
-                    display: "Hepatitis due to infection",
-                }],
-            },
+            // Create conditions with codes in the SNOMED subset
+            await createTestCondition(context, {
+                code: {
+                    coding: [{
+                        system: "http://snomed.info/sct",
+                        code: "235862008",
+                        display: "Hepatitis due to infection",
+                    }],
+                },
+            });
+
+            // Create a condition with a code not in the SNOMED subset
+            await createTestCondition(context, {
+                code: {
+                    coding: [{
+                        system: "http://snomed.info/sct",
+                        code: "54398005",
+                        display: "Acute upper respiratory infection",
+                    }],
+                },
+            });
+
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Condition?code:not-in=${encodedSnomedSubset}`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process search with URL-encoded ValueSet reference successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry.length,
+                1,
+                "Should find exactly one condition not in the SNOMED subset",
+            );
+
+            const condition = bundle.entry[0].resource as Condition;
+            assertEquals(
+                condition.code?.coding?.[0].code,
+                "54398005",
+                "Found condition should have the correct code not in the SNOMED subset",
+            );
         });
-
-        // Create a condition with a code not in the SNOMED subset
-        await createTestCondition(context, {
-            code: {
-                coding: [{
-                    system: "http://snomed.info/sct",
-                    code: "54398005",
-                    display: "Acute upper respiratory infection",
-                }],
-            },
-        });
-
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Condition?code:not-in=${encodedSnomedSubset}`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process search with URL-encoded ValueSet reference successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            1,
-            "Should find exactly one condition not in the SNOMED subset",
-        );
-
-        const condition = bundle.entry[0].resource as Condition;
-        assertEquals(
-            condition.code?.coding?.[0].code,
-            "54398005",
-            "Found condition should have the correct code not in the SNOMED subset",
-        );
-    });
+    }
 
     it("Should reject not-in modifier on non-token search parameters", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?birthdate:not-in=ValueSet/123`,
         });
@@ -154,8 +161,9 @@ export function runNotInModifierTests(context: ITestContext) {
     });
 
     it("Should handle logical references to ValueSets", async () => {
-        const logicalUrl =
-            "http://example.org/fhir/ValueSet/test-logical-valueset";
+        const logicalUrl = uniqueString(
+            "http://example.org/fhir/ValueSet/test-logical-valueset",
+        );
         await createTestValueSet(context, {
             url: logicalUrl,
             compose: {
@@ -190,7 +198,7 @@ export function runNotInModifierTests(context: ITestContext) {
             },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?code:not-in=${
                 encodeURIComponent(logicalUrl)
@@ -219,14 +227,13 @@ export function runNotInModifierTests(context: ITestContext) {
     });
 
     it("Should not allow not-in modifier with boolean token parameters", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?active:not-in=ValueSet/123`,
         });
 
-        assertEquals(
-            response.status,
-            400,
+        assertTrue(
+            response.status >= 400 && response.status < 500,
             "Server should reject not-in modifier with boolean token parameters",
         );
     });

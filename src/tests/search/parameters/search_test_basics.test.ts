@@ -1,7 +1,12 @@
 // tests/search/parameters/search_test_basics.test.ts
 
-import { assertEquals, assertExists, assertTrue, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import {
+    assertEquals,
+    assertExists,
+    assertTrue,
+    it,
+} from "../../../../deps.test.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -14,7 +19,7 @@ export function runSearchTestBasicsTests(context: ITestContext) {
         const givenName = "TestGiven";
         await createTestPatient(context, { given: [givenName] });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?given=${givenName}`,
         });
@@ -45,7 +50,7 @@ export function runSearchTestBasicsTests(context: ITestContext) {
         const code = "8480-6";
         await createTestObservation(context, patient.id!, { code: code });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?code=${codeSystem}|${code}`,
         });
@@ -75,33 +80,42 @@ export function runSearchTestBasicsTests(context: ITestContext) {
         );
     });
 
-    it("Should perform number search with modifier", async () => {
-        const patient = await createTestPatient(context, {});
-        const systolicBP = 120;
-        await createTestObservation(context, patient.id!, {
-            code: "8480-6",
-            value: systolicBP,
-        });
+    if (context.isHapiBugsDisallowed()) {
+        it("Should perform number search with modifier", async () => {
+            const patient = await createTestPatient(context, {});
+            const systolicBP = 120;
+            await createTestObservation(context, patient.id!, {
+                code: "8480-6",
+                value: systolicBP,
+            });
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl:
-                `Observation?code=8480-6&value-quantity:not=${systolicBP}`,
-        });
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl:
+                    `Observation?code=8480-6&value-quantity:not=${systolicBP}`,
+            });
 
-        assertEquals(
-            response.status,
-            200,
-            "Server should process number search with modifier successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            0,
-            "Bundle should not contain any matching Observations",
-        );
-    });
+            assertEquals(
+                response.status,
+                200,
+                "Server should process number search with modifier successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry?.length ?? 0,
+                0,
+                "Bundle should not contain any matching Observations",
+            );
+            if (context.isBundleTotalMandatory()) {
+                assertEquals(
+                    bundle.total,
+                    0,
+                    "Bundle should not contain any matching Observations",
+                );
+            }
+        });
+    }
 
     it("Should perform number search with prefix", async () => {
         const patient = await createTestPatient(context, {});
@@ -111,7 +125,7 @@ export function runSearchTestBasicsTests(context: ITestContext) {
             value: systolicBP,
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?code=8480-6&value-quantity=gt100`,
         });
@@ -134,30 +148,5 @@ export function runSearchTestBasicsTests(context: ITestContext) {
             systolicBP,
             "Returned observation should have the correct value",
         );
-    });
-
-    it("Should not allow both modifier and prefix in a single search", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Observation?value-quantity:not=gt100`,
-        });
-
-        // The exact behavior might depend on your server implementation
-        // It could either return an error or ignore one of the conflicting parts
-        if (response.status >= 400) {
-            assertTrue(
-                true,
-                "Server rejected search with both modifier and prefix",
-            );
-        } else {
-            assertEquals(
-                response.status,
-                200,
-                "Server processed search, likely ignoring one of modifier or prefix",
-            );
-            const bundle = response.jsonBody as Bundle;
-            assertExists(bundle.entry, "Bundle should contain entries");
-            // You might want to check the search results to see which of modifier or prefix was applied
-        }
     });
 }

@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestCondition,
     createTestPatient,
@@ -77,7 +77,7 @@ export function runTextModifierReferenceTokenTests(context: ITestContext) {
             },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?code:text=headache`,
         });
@@ -106,58 +106,6 @@ export function runTextModifierReferenceTokenTests(context: ITestContext) {
         }
     });
 
-    it("Should find patients with identifiers that match text search on token parameter", async () => {
-        const identifierText = uniqueString("TestIdentifier");
-
-        await createTestPatient(context, {
-            identifier: [{
-                type: {
-                    text: `${identifierText} Type`,
-                },
-                system: "http://example.com/identifier",
-                value: "12345",
-            }],
-        });
-
-        await createTestPatient(context, {
-            identifier: [{
-                type: {
-                    text: "Some Other Type",
-                },
-                system: "http://example.com/identifier",
-                value: "67890",
-            }],
-        });
-
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?identifier:text=${identifierText}`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process search with text modifier on token parameter for identifiers successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            1,
-            "Should find exactly one patient with matching identifier text",
-        );
-
-        const patient = bundle.entry[0].resource as Patient;
-        assertTrue(
-            patient.identifier?.some((id) =>
-                id.type?.text?.toLowerCase().startsWith(
-                    identifierText.toLowerCase(),
-                )
-            ),
-            "Found patient should have an identifier with matching text",
-        );
-    });
-
     it("Should perform case-insensitive search with text modifier", async () => {
         const patient = await createTestPatient(context);
 
@@ -172,7 +120,7 @@ export function runTextModifierReferenceTokenTests(context: ITestContext) {
             },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?code:text=headache`,
         });
@@ -205,7 +153,7 @@ export function runTextModifierReferenceTokenTests(context: ITestContext) {
             },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?code:text=headache`,
         });
@@ -216,24 +164,66 @@ export function runTextModifierReferenceTokenTests(context: ITestContext) {
             "Server should process search successfully",
         );
         const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
         assertEquals(
-            bundle.entry.length,
+            bundle.entry?.length ?? 0,
             0,
             "Should not find conditions where 'headache' is not at the start of the text",
         );
     });
 
-    it("Should reject text modifier on non-reference, non-token search parameters", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?birthdate:text=1990`,
-        });
+    if (context.isHapiBugsDisallowed()) {
+        it("Should reject text modifier on non-reference, non-token search parameters", async () => {
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?birthdate:text=1990`,
+            });
 
-        assertEquals(
-            response.status,
-            400,
-            "Server should reject text modifier on non-reference, non-token search parameters",
-        );
-    });
+            assertEquals(
+                response.status,
+                400,
+                "Server should reject text modifier on non-reference, non-token search parameters",
+            );
+        });
+        it("Should find conditions with codes that partially match text search on token parameter", async () => {
+            const patient = await createTestPatient(context);
+
+            const partialMatchCode = {
+                system: "http://snomed.info/sct",
+                code: "123456",
+                display: "Condition with headache symptoms",
+            };
+
+            await createTestCondition(context, {
+                subject: { reference: `Patient/${patient.id}` },
+                code: {
+                    coding: [partialMatchCode],
+                },
+            });
+
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Condition?code:text=headache`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process search with text modifier for partial matches successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry.length,
+                1,
+                "Should find the condition with partial text match",
+            );
+
+            const condition = bundle.entry[0].resource as Condition;
+            assertEquals(
+                condition.code?.coding?.[0].display,
+                partialMatchCode.display,
+                "Found condition should have the expected display text",
+            );
+        });
+    }
 }

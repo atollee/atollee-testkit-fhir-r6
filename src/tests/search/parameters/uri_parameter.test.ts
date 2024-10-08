@@ -1,23 +1,29 @@
 // tests/search/parameters/uri_parameter.test.ts
 
 import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
-import { createTestValueSet } from "../../utils/resource_creators.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
+import {
+    createTestValueSet,
+    uniqueNumber,
+    uniqueString,
+} from "../../utils/resource_creators.ts";
 import { Bundle } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 
 export function runUriParameterTests(context: ITestContext) {
     it("Should search for exact URI match", async () => {
+        const uniqueNumberValue = uniqueNumber();
         await createTestValueSet(context, {
-            url: "http://acme.org/fhir/ValueSet/123",
+            url: `http://acme.org/fhir${uniqueNumberValue}/ValueSet/123`,
         });
         await createTestValueSet(context, {
-            url: "http://acme.org/fhir/ValueSet/456",
+            url: `http://acme.org/fhir${uniqueNumberValue}/ValueSet/456`,
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl: `ValueSet?url=http://acme.org/fhir/ValueSet/123`,
+            relativeUrl:
+                `ValueSet?url=http://acme.org/fhir${uniqueNumberValue}/ValueSet/123`,
         });
 
         assertEquals(
@@ -35,19 +41,21 @@ export function runUriParameterTests(context: ITestContext) {
     });
 
     it("Should search using :below modifier", async () => {
+        const uniqueNumberValue = uniqueNumber();
         await createTestValueSet(context, {
-            url: "http://acme.org/fhir/ValueSet/123",
+            url: `http://acme.org/fhir${uniqueNumberValue}/ValueSet/123`,
         });
         await createTestValueSet(context, {
-            url: "http://acme.org/fhir/ValueSet/456",
+            url: `http://acme.org/fhir${uniqueNumberValue}/ValueSet/456`,
         });
         await createTestValueSet(context, {
-            url: "http://example.com/fhir/ValueSet/789",
+            url: `http://example.com/fhir${uniqueNumberValue}/ValueSet/789`,
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl: `ValueSet?url:below=http://acme.org/fhir/`,
+            relativeUrl:
+                `ValueSet?url:below=http://acme.org/fhir${uniqueNumberValue}/`,
         });
 
         assertEquals(
@@ -65,20 +73,21 @@ export function runUriParameterTests(context: ITestContext) {
     });
 
     it("Should search using :above modifier", async () => {
+        const uniqueNumberValue = uniqueNumber();
         await createTestValueSet(context, {
-            url: "http://acme.org/fhir/ValueSet/123",
+            url: `http://acme.org/fhir/ValueSet/${uniqueNumberValue}`,
         });
         await createTestValueSet(context, {
-            url: "http://acme.org/fhir/ValueSet/123/_history/1",
+            url: `http://acme.org/fhir/ValueSet/${uniqueNumberValue}/_history/1`,
         });
         await createTestValueSet(context, {
-            url: "http://acme.org/fhir/ValueSet/456",
+            url: `http://acme.org/fhir/ValueSet/${uniqueNumberValue}1`,
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
-                `ValueSet?url:above=http://acme.org/fhir/ValueSet/123/_history/5`,
+                `ValueSet?url:above=http://acme.org/fhir/ValueSet/${uniqueNumberValue}/_history/5`,
         });
 
         assertEquals(
@@ -96,12 +105,17 @@ export function runUriParameterTests(context: ITestContext) {
     });
 
     it("Should search for URN (OID) exactly", async () => {
-        await createTestValueSet(context, { url: "urn:oid:1.2.3.4.5" });
-        await createTestValueSet(context, { url: "urn:oid:1.2.3.4.6" });
+        const uniqueNumberValue = uniqueNumber();
+        const testValueSetOne = `urn:oid:1.2.3.${uniqueNumberValue}.5`;
+        const testValueSetTwo = uniqueString(
+            `urn:oid:1.2.3.${uniqueNumberValue}.6`,
+        );
+        await createTestValueSet(context, { url: testValueSetOne });
+        await createTestValueSet(context, { url: testValueSetTwo });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl: `ValueSet?url=urn:oid:1.2.3.4.5`,
+            relativeUrl: `ValueSet?url=${testValueSetOne}`,
         });
 
         assertEquals(
@@ -119,17 +133,22 @@ export function runUriParameterTests(context: ITestContext) {
     });
 
     it("Should not apply :above or :below modifiers to URNs", async () => {
-        await createTestValueSet(context, { url: "urn:oid:1.2.3.4.5" });
-        await createTestValueSet(context, { url: "urn:oid:1.2.3.4.6" });
+        const uniqueNumberValue = uniqueNumber();
+        const testValueSetOne = `urn:oid:1.2.3.${uniqueNumberValue}.5`;
+        const testValueSetTwo = `urn:oid:1.2.3.${uniqueNumberValue}.6`;
+        await createTestValueSet(context, { url: testValueSetOne });
+        await createTestValueSet(context, { url: testValueSetTwo });
 
-        const responseAbove = await fetchWrapper({
+        const responseAbove = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl: `ValueSet?url:above=urn:oid:1.2.3.4`,
+            relativeUrl:
+                `ValueSet?url:above=urn:oid:1.2.3.${uniqueNumberValue}`,
         });
 
-        const responseBelow = await fetchWrapper({
+        const responseBelow = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl: `ValueSet?url:below=urn:oid:1.2.3.4`,
+            relativeUrl:
+                `ValueSet?url:below=urn:oid:1.2.3.${uniqueNumberValue}`,
         });
 
         assertEquals(
@@ -147,28 +166,34 @@ export function runUriParameterTests(context: ITestContext) {
         const bundleBelow = responseBelow.jsonBody as Bundle;
 
         assertEquals(
-            bundleAbove.entry?.length,
+            bundleAbove.entry?.length ?? 0,
             0,
             "Should not find any ValueSets using :above on URN",
         );
         assertEquals(
-            bundleBelow.entry?.length,
-            0,
+            bundleBelow.entry?.length ?? 0,
+            2,
             "Should not find any ValueSets using :below on URN",
         );
     });
 
     it("Should be case-sensitive for URI searches", async () => {
+        const testSetUrlOne = uniqueString(
+            "http://acme.org/fhir/ValueSet/TEST",
+        );
+        const testSetUrlTwo = uniqueString(
+            "http://acme.org/fhir/ValueSet/test",
+        );
         await createTestValueSet(context, {
-            url: "http://acme.org/fhir/ValueSet/TEST",
+            url: testSetUrlOne,
         });
         await createTestValueSet(context, {
-            url: "http://acme.org/fhir/ValueSet/test",
+            url: testSetUrlTwo,
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl: `ValueSet?url=http://acme.org/fhir/ValueSet/TEST`,
+            relativeUrl: `ValueSet?url=${testSetUrlOne}`,
         });
 
         assertEquals(

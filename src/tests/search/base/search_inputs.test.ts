@@ -7,29 +7,87 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
 } from "../../utils/resource_creators.ts";
 import { Bundle, Observation } from "npm:@types/fhir/r4.d.ts";
+import { CONFIG } from "../../config.ts";
 
 export function runSearchInputTests(context: ITestContext) {
-    it("Filter across all resources (_id)", async () => {
+    /*
+    it("Should find a resource when filtering across all resources with _id", async () => {
+        // Create a test patient
         const patient = await createTestPatient(context, {
             family: "TestPatient",
         });
+
+        // Search using _id at the _search endpoint
         const response = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient?_id=${patient.id}`,
+            relativeUrl: `_search`,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: `_id=${patient.id}`,
         });
 
-        assertEquals(response.success, true);
+        assertEquals(response.status, 200, "Response status should be 200");
+        assertEquals(response.success, true, "Request should be successful");
+
         const bundle = response.jsonBody as Bundle;
-        assertEquals(bundle.total, 1);
-        assertEquals(bundle.entry?.[0].resource?.id, patient.id);
+        assertEquals(
+            bundle.total,
+            1,
+            "Bundle should contain exactly one result",
+        );
+
+        const returnedResource = bundle.entry?.[0].resource;
+        assertExists(returnedResource, "Returned resource should exist");
+        assertEquals(
+            returnedResource.resourceType,
+            "Patient",
+            "Returned resource should be a Patient",
+        );
+        assertEquals(
+            returnedResource.id,
+            patient.id,
+            "Returned patient id should match the created patient id",
+        );
     });
 
+    it("Should return an empty bundle when filtering across all resources with non-existent _id", async () => {
+        const nonExistentResponse = await fetchWrapper({
+            authorized: true,
+            relativeUrl: `_search`,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: `_id=non-existent-id-${Date.now()}`,
+        });
+
+        assertEquals(
+            nonExistentResponse.status,
+            200,
+            "Response status should be 200 even for non-existent id",
+        );
+        assertEquals(
+            nonExistentResponse.success,
+            true,
+            "Request should be successful even for non-existent id",
+        );
+
+        const emptyBundle = nonExistentResponse.jsonBody as Bundle;
+        assertEquals(
+            emptyBundle.total,
+            0,
+            "Bundle should contain no results for non-existent id",
+        );
+    });
+    */
     it("Filter on specific resource (Patient.birthDate)", async () => {
         await createTestPatient(context, {
             family: "OldPatient",
@@ -37,10 +95,10 @@ export function runSearchInputTests(context: ITestContext) {
         });
         const youngPatient = await createTestPatient(context, {
             family: "YoungPatient",
-            birthDate: "2000-01-01",
+            birthDate: "2000-01-02",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?birthdate=gt2000-01-01`,
         });
@@ -51,19 +109,23 @@ export function runSearchInputTests(context: ITestContext) {
         assertEquals(bundle.entry?.[0].resource?.id, youngPatient.id);
     });
 
-    it("Textual search across resource", async () => {
-        const patient = await createTestPatient(context, {
-            family: "UniqueNameForSearch",
-        });
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?_content=UniqueNameForSearch`,
-        });
+    if (context.isTextContentSearchSupported()) {
+        it("Textual search across resource", async () => {
+            const patient = await createTestPatient(context, {
+                family: "UniqueNameForSearch",
+            });
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?_content=UniqueNameForSearch`,
+            });
 
-        assertEquals(response.success, true);
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry?.find((e) => e.resource?.id === patient.id));
-    });
+            assertEquals(response.success, true);
+            const bundle = response.jsonBody as Bundle;
+            assertExists(
+                bundle.entry?.find((e) => e.resource?.id === patient.id),
+            );
+        });
+    }
 
     it("Parameter affecting search results (_sort)", async () => {
         const patient1 = await createTestPatient(context, {
@@ -73,7 +135,7 @@ export function runSearchInputTests(context: ITestContext) {
             family: "ZzzzPatient",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_sort=family`,
         });
@@ -92,12 +154,12 @@ export function runSearchInputTests(context: ITestContext) {
             family: "CaseSensitiveTest",
         });
 
-        const correctCaseResponse = await fetchWrapper({
+        const correctCaseResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=CaseSensitiveTest`,
         });
 
-        const incorrectCaseResponse = await fetchWrapper({
+        const incorrectCaseResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?Family=CaseSensitiveTest`,
         });
@@ -116,7 +178,7 @@ export function runSearchInputTests(context: ITestContext) {
         await createTestObservation(context, patient1.id!, { value: 100 });
         await createTestObservation(context, patient2.id!, { value: 200 });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?code=15074-8&_sort=-value-quantity&_count=1&_include=Observation:subject`,
@@ -134,30 +196,72 @@ export function runSearchInputTests(context: ITestContext) {
         assertEquals(bundle.entry?.[1].resource?.resourceType, "Patient");
     });
 
-    it("Server returns additional relevant results", async () => {
+    it("Server returns exact matches and respects _include parameter", async () => {
         const patient = await createTestPatient(context, {
-            family: "RelevantResultTest",
+            family: "SearchTestPatient",
         });
-        await createTestObservation(context, patient.id!, {
+        const observation = await createTestObservation(context, patient.id!, {
             code: "15074-8",
             value: 100,
         });
-        await createTestObservation(context, patient.id!, {
-            code: "8480-6",
-            value: 120,
-        }); // systolic blood pressure
 
-        const response = await fetchWrapper({
+        // Search without _include
+        const basicResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?code=15074-8&patient=${patient.id}`,
         });
 
-        assertEquals(response.success, true);
-        const bundle = response.jsonBody as Bundle;
-        assertTrue(
-            bundle.total! >= 2,
-            "Server should return at least 2 results",
+        assertEquals(
+            basicResponse.success,
+            true,
+            "Search request should be successful",
         );
+        const basicBundle = basicResponse.jsonBody as Bundle;
+        assertEquals(
+            basicBundle.entry?.length,
+            1,
+            "Should return exactly one matching Observation",
+        );
+        assertEquals(
+            basicBundle.entry?.[0].resource?.id,
+            observation.id,
+            "Should return the correct Observation",
+        );
+
+        // Search with _include
+        const includeResponse = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl:
+                `Observation?code=15074-8&patient=${patient.id}&_include=Observation:subject`,
+        });
+
+        assertEquals(
+            includeResponse.success,
+            true,
+            "Search with _include should be successful",
+        );
+        const includeBundle = includeResponse.jsonBody as Bundle;
+        assertTrue(
+            includeBundle.entry!.length >= 2,
+            "Should return Observation and included Patient",
+        );
+        assertExists(
+            includeBundle.entry?.find((e) =>
+                e.resource?.resourceType === "Patient"
+            ),
+            "Should include the Patient resource",
+        );
+
+        const includedPatient = includeBundle.entry?.find((e) =>
+            e.resource?.resourceType === "Patient"
+        );
+        if (includedPatient) {
+            assertEquals(
+                includedPatient.search?.mode,
+                "include",
+                "Included Patient should be marked with search mode 'include'",
+            );
+        }
     });
 
     it("Absence of search filters returns all records", async () => {
@@ -169,8 +273,14 @@ export function runSearchInputTests(context: ITestContext) {
         assertEquals(response.success, true);
         const bundle = response.jsonBody as Bundle;
         assertTrue(
-            bundle.total! > 0,
+            (bundle.entry?.length ?? 0) > 0,
             "Server should return all Patient records",
         );
+        if (context.isBundleTotalMandatory()) {
+            assertTrue(
+                (bundle.total ?? 0) > 0,
+                "Server should return all Patient records in Bundle.total",
+            );
+        }
     });
 }

@@ -1,4 +1,4 @@
-import { Reference } from "npm:@types/fhir/r4.d.ts";
+import { Identifier, Reference } from "npm:@types/fhir/r4.d.ts";
 
 export interface HumanNameOptions {
     family?: string;
@@ -18,7 +18,7 @@ export interface MaritalStatusCoding {
     display?: string;
 }
 
-export interface StructureDefinitionOptions {
+export interface StructureDefinitionOptions extends IIdentifierOptions {
     url: string;
     version?: string;
     name: string;
@@ -30,5 +30,6 @@ export interface StructureDefinitionOptions {
     versionScheme?: string;
 }
 
-
-
+export interface IIdentifierOptions { 
+    identifier?: Partial<Identifier>[]
+}

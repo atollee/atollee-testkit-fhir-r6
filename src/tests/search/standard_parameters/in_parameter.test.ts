@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestCareTeam,
     createTestCondition,
@@ -43,7 +43,7 @@ export function runInParameterTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_in=Group/${group.id}`,
         });
@@ -94,7 +94,7 @@ export function runInParameterTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?_in=List/${list.id}`,
         });
@@ -141,7 +141,7 @@ export function runInParameterTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_in=CareTeam/${careTeam.id}`,
         });
@@ -195,7 +195,7 @@ export function runInParameterTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Encounter?patient._in=Group/${group.id}`,
         });
@@ -252,7 +252,7 @@ export function runInParameterTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Medication?code:below=http://snomed.info/sct|90000002&_in:not=List/${allergyList.id}`,
@@ -296,7 +296,7 @@ export function runInParameterTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_in=Group/${group.id}`,
         });

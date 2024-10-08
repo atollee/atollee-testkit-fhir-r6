@@ -1,11 +1,21 @@
 import { HumanName, Narrative, Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
-import { HumanNameOptions, LinkOptions, MaritalStatusCoding } from "./types.ts";
-import { createHumanName, getRandomText } from "./utils.ts";
+import {
+    HumanNameOptions,
+    IIdentifierOptions,
+    LinkOptions,
+    MaritalStatusCoding,
+} from "./types.ts";
+import {
+    createHumanName,
+    createIdentifierOptions,
+    getRandomText,
+} from "./utils.ts";
 import { Meta } from "npm:@types/fhir";
+import { assertTrue } from "../../../../deps.test.ts";
 
-export interface PatientOptions {
+export interface PatientOptions extends IIdentifierOptions {
     id?: string;
     name?: HumanNameOptions | HumanNameOptions[];
     family?: string;
@@ -15,8 +25,6 @@ export interface PatientOptions {
     active?: boolean;
     // deno-lint-ignore no-explicit-any
     address?: any[]; // You might want to create a specific AddressOptions export interface
-    // deno-lint-ignore no-explicit-any
-    identifier?: any[]; // You might want to create a specific IdentifierOptions export interface
     link?: LinkOptions[];
     maritalStatus?: {
         coding: MaritalStatusCoding[];
@@ -29,12 +37,16 @@ export interface PatientOptions {
             coding: Array<{
                 system: string;
                 code: string;
+                display?: string;
             }>;
         };
     }>;
     managingOrganization?: {
         reference: string;
     };
+    nameUndefined?: boolean;
+    birthdateUndefined?: boolean;
+    genderUndefined?: boolean;
 }
 
 export function getTestPatientCurrentIdentifier() {
@@ -51,10 +63,13 @@ export async function createTestPatient(
         birthDate: "1990-01-01",
         gender: "unknown",
         active: true,
-        identifier: [{ value: getTestPatientCurrentIdentifier() }],
     };
 
-    const mergedOptions = { ...defaultOptions, ...options };
+    const mergedOptions = {
+        ...defaultOptions,
+        ...options,
+        identifier: createIdentifierOptions(options.identifier),
+    };
 
     let patientName: HumanName[];
     if (mergedOptions.family || mergedOptions.given) {
@@ -81,7 +96,7 @@ export async function createTestPatient(
         link: mergedOptions.link,
         maritalStatus: mergedOptions.maritalStatus,
         communication: options.communication,
-        managingOrganization: options.managingOrganization
+        managingOrganization: options.managingOrganization,
     };
 
     if (mergedOptions.id) {
@@ -98,6 +113,15 @@ export async function createTestPatient(
     if (mergedOptions.text) {
         newPatient.text = mergedOptions.text;
     }
+    if (options.nameUndefined) {
+        delete newPatient.name;
+    }
+    if (options.birthdateUndefined) {
+        delete newPatient.birthDate;
+    }
+    if (options.genderUndefined) {
+        delete newPatient.gender;
+    }
     const response = await fetchWrapper({
         authorized: true,
         relativeUrl: "Patient",
@@ -105,5 +129,6 @@ export async function createTestPatient(
         body: JSON.stringify(newPatient),
     });
 
+    assertTrue(response.success, "Test Patient should be created successfully");
     return response.jsonBody as Patient;
 }

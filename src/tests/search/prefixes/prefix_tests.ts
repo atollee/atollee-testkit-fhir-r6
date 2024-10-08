@@ -1,7 +1,7 @@
 // tests/search/prefixes/prefix_tests.ts
 
 import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -33,7 +33,7 @@ export function runPrefixTests(context: ITestContext) {
         ];
 
         for (const test of prefixTests) {
-            const response = await fetchWrapper({
+            const response = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl:
                     `Observation?value-quantity=${test.prefix}${test.value}`,
@@ -90,7 +90,7 @@ export function runPrefixTests(context: ITestContext) {
         ];
 
         for (const test of prefixTests) {
-            const response = await fetchWrapper({
+            const response = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl: `Observation?date=${test.prefix}${test.value}`,
             });
@@ -160,7 +160,7 @@ export function runPrefixTests(context: ITestContext) {
         ];
 
         for (const test of prefixTests) {
-            const response = await fetchWrapper({
+            const response = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl:
                     `Observation?value-quantity=${test.prefix}${test.value}`,
@@ -197,7 +197,7 @@ export function runPrefixTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?value-quantity=ap100`,
         });
@@ -232,7 +232,7 @@ export function runPrefixTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?value-quantity=gt60&value-quantity=lt90`,
         });
@@ -275,7 +275,7 @@ export function runPrefixTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=ge2022-12-31&date=le2023-01-02`,
         });
@@ -316,7 +316,7 @@ export function runPrefixTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=ge2023-02`,
         });
@@ -357,7 +357,7 @@ export function runPrefixTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=gt2023-01-01T12:00:00Z`,
         });
@@ -398,7 +398,7 @@ export function runPrefixTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?value-quantity=gt60|http://unitsofmeasure.org|mg/dL`,
@@ -434,7 +434,7 @@ export function runPrefixTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?value-quantity=70`,
         });
@@ -469,7 +469,7 @@ export function runPrefixTests(context: ITestContext) {
             });
         }
 
-        const saResponse = await fetchWrapper({
+        const saResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?value-quantity=sa2.0`,
         });
@@ -490,7 +490,7 @@ export function runPrefixTests(context: ITestContext) {
             "Should find 1 observation for sa2.0",
         );
 
-        const ebResponse = await fetchWrapper({
+        const ebResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?value-quantity=eb2.0`,
         });
@@ -520,7 +520,7 @@ export function runPrefixTests(context: ITestContext) {
             // No value or unit specified
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?value-quantity=gt0`,
         });
@@ -550,7 +550,7 @@ export function runPrefixTests(context: ITestContext) {
             },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?value-quantity=gt60`,
         });
@@ -582,7 +582,7 @@ export function runPrefixTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?value-quantity=lt60,gt80`,
         });

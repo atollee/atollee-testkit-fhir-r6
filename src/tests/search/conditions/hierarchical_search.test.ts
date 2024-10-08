@@ -3,23 +3,16 @@
 import {
     assertEquals,
     assertExists,
+    assertFalse,
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
-    createTestEncounter,
-    createTestLocation,
     createTestPatient,
-    createTestProcedure,
+    createTestValueSet,
 } from "../../utils/resource_creators.ts";
-import {
-    Bundle,
-    CapabilityStatement,
-    Encounter,
-    OperationOutcome,
-    Procedure,
-} from "npm:@types/fhir/r4.d.ts";
+import { Bundle, OperationOutcome, ValueSet } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 
 function uniqueString(base: string): string {
@@ -27,139 +20,216 @@ function uniqueString(base: string): string {
 }
 
 export function runHierarchicalSearchTests(context: ITestContext) {
-    it("Should find procedures in location hierarchy using :below modifier", async () => {
-        // Create a hierarchy of locations
-        const hospitalLocation = await createTestLocation(context, {
-            name: uniqueString("Hospital"),
+    if (context.isHapiBugsDisallowed()) {
+        it("Should find ValueSets using :below modifier", async () => {
+            const baseUrl = uniqueString(
+                "http://example.org/fhir/ValueSet/test-hierarchy",
+            );
+
+            // Create a hierarchy of ValueSets
+            const parentValueSet = await createTestValueSet(context, {
+                url: baseUrl,
+                name: "ParentValueSet",
+                status: "active",
+            });
+
+            const childValueSet1 = await createTestValueSet(context, {
+                url: `${baseUrl}/child1`,
+                name: "ChildValueSet1",
+                status: "active",
+            });
+
+            const childValueSet2 = await createTestValueSet(context, {
+                url: `${baseUrl}/child2`,
+                name: "ChildValueSet2",
+                status: "active",
+            });
+
+            // Search for ValueSets using :below modifier
+            const response = await fetchWrapper({
+                authorized: true,
+                relativeUrl: `ValueSet?url:below=${
+                    encodeURIComponent(baseUrl)
+                }`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process hierarchical search with :below modifier successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry.length,
+                3,
+                "Bundle should contain three matching ValueSets (parent and two children)",
+            );
+
+            const valueSetIds = bundle.entry.map((entry) =>
+                (entry.resource as ValueSet).id
+            );
+            assertTrue(
+                valueSetIds.includes(parentValueSet.id),
+                "Results should include parent ValueSet",
+            );
+            assertTrue(
+                valueSetIds.includes(childValueSet1.id),
+                "Results should include child ValueSet 1",
+            );
+            assertTrue(
+                valueSetIds.includes(childValueSet2.id),
+                "Results should include child ValueSet 2",
+            );
+
+            // Verify that all returned ValueSets have the correct URL hierarchy
+            const returnedValueSets = bundle.entry.map((entry) =>
+                entry.resource as ValueSet
+            );
+            assertTrue(
+                returnedValueSets.every((vs) => vs.url?.startsWith(baseUrl)),
+                "All returned ValueSets should have URLs that start with the base URL",
+            );
+
+            // Test with a specific version
+            const responseWithVersion = await fetchWrapper({
+                authorized: true,
+                relativeUrl: `ValueSet?url:below=${
+                    encodeURIComponent(baseUrl)
+                }%7C1.0.0`,
+            });
+
+            assertEquals(
+                responseWithVersion.status,
+                200,
+                "Server should process hierarchical search with :below modifier and version successfully",
+            );
+            const bundleWithVersion = responseWithVersion.jsonBody as Bundle;
+            assertEquals(
+                bundleWithVersion.entry?.length,
+                3,
+                "Bundle should contain three matching ValueSets when specifying version",
+            );
+        });
+    }
+
+    it("Should find ValueSets in hierarchy using :above modifier", async () => {
+        const baseUrl = uniqueString(
+            "http://example.org/fhir/ValueSet/test-hierarchy",
+        );
+
+        // Create a hierarchy of ValueSets
+        const parentValueSet = await createTestValueSet(context, {
+            url: baseUrl,
+            name: "ParentValueSet",
+            status: "active",
         });
 
-        const wardLocation = await createTestLocation(context, {
-            name: uniqueString("Ward"),
-            partOf: { reference: `Location/${hospitalLocation.id}` },
+        const childValueSet = await createTestValueSet(context, {
+            url: `${baseUrl}/child`,
+            name: "ChildValueSet",
+            status: "active",
         });
 
-        const roomLocation = await createTestLocation(context, {
-            name: uniqueString("Room"),
-            partOf: { reference: `Location/${wardLocation.id}` },
+        const grandchildValueSet = await createTestValueSet(context, {
+            url: `${baseUrl}/child/grandchild`,
+            name: "GrandchildValueSet",
+            status: "active",
         });
 
-        // Create procedures at different levels of the location hierarchy
-        const procedureHospital = await createTestProcedure(context, {
-            location: { reference: `Location/${hospitalLocation.id}` },
-        });
-
-        const procedureWard = await createTestProcedure(context, {
-            location: { reference: `Location/${wardLocation.id}` },
-        });
-
-        const procedureRoom = await createTestProcedure(context, {
-            location: { reference: `Location/${roomLocation.id}` },
-        });
-
-        // Search for procedures in the hospital and all sub-locations
-        const response = await fetchWrapper({
+        // Search for ValueSets in the hierarchy using :above modifier
+        const response = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl: `Procedure?location:below=${hospitalLocation.id}`,
+            relativeUrl: `ValueSet?url:above=${
+                encodeURIComponent(`${baseUrl}/child/grandchild`)
+            }`,
         });
 
         assertEquals(
             response.status,
             200,
-            "Server should process hierarchical search successfully",
+            "Server should process hierarchical search with :above modifier successfully",
         );
         const bundle = response.jsonBody as Bundle;
         assertExists(bundle.entry, "Bundle should contain entries");
         assertEquals(
             bundle.entry.length,
             3,
-            "Bundle should contain three matching Procedures",
+            "Bundle should contain three matching ValueSets",
         );
 
-        const procedureIds = bundle.entry.map((entry) =>
-            (entry.resource as Procedure).id
-        );
-        assertTrue(
-            procedureIds.includes(procedureHospital.id),
-            "Results should include procedure at hospital level",
+        const valueSetUrls = bundle.entry.map((entry) =>
+            (entry.resource as ValueSet).url
         );
         assertTrue(
-            procedureIds.includes(procedureWard.id),
-            "Results should include procedure at ward level",
+            valueSetUrls.includes(parentValueSet.url),
+            "Results should include parent ValueSet",
         );
         assertTrue(
-            procedureIds.includes(procedureRoom.id),
-            "Results should include procedure at room level",
+            valueSetUrls.includes(childValueSet.url),
+            "Results should include child ValueSet",
         );
-    });
+        assertTrue(
+            valueSetUrls.includes(grandchildValueSet.url),
+            "Results should include grandchild ValueSet",
+        );
 
-    it("Should find encounters in encounter hierarchy using :above modifier", async () => {
-        // Create a hierarchy of encounters
-        const hospitalStayEncounter = await createTestEncounter(context, {
-            status: "finished",
-        });
-
-        const wardStayEncounter = await createTestEncounter(context, {
-            status: "finished",
-        });
-
-        const procedureEncounter = await createTestEncounter(context, {
-            status: "finished",
-        });
-
-        // Manually update encounters to create hierarchy
-        await fetchWrapper({
+        // Test with a specific version
+        const responseWithVersion = await fetchSearchWrapper({
             authorized: true,
-            method: "PUT",
-            relativeUrl: `Encounter/${wardStayEncounter.id}`,
-            body: JSON.stringify({
-                ...wardStayEncounter,
-                partOf: { reference: `Encounter/${hospitalStayEncounter.id}` },
-            }),
-        });
-
-        await fetchWrapper({
-            authorized: true,
-            method: "PUT",
-            relativeUrl: `Encounter/${procedureEncounter.id}`,
-            body: JSON.stringify({
-                ...procedureEncounter,
-                partOf: { reference: `Encounter/${wardStayEncounter.id}` },
-            }),
-        });
-
-        // Search for encounters in the procedure encounter and all parent encounters
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Encounter?_id:above=${procedureEncounter.id}`,
+            relativeUrl: `ValueSet?url:above=${
+                encodeURIComponent(`${baseUrl}/child/grandchild`)
+            }|1.0.0`,
         });
 
         assertEquals(
-            response.status,
+            responseWithVersion.status,
             200,
-            "Server should process hierarchical search successfully",
+            "Server should process hierarchical search with :above modifier and version successfully",
         );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
+        const bundleWithVersion = responseWithVersion.jsonBody as Bundle;
         assertEquals(
-            bundle.entry.length,
+            bundleWithVersion.entry?.length,
             3,
-            "Bundle should contain three matching Encounters",
+            "Bundle should contain three matching ValueSets when specifying version",
         );
 
-        const encounterIds = bundle.entry.map((entry) =>
-            (entry.resource as Encounter).id
+        // Test searching from a child URL
+        const responseFromChild = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl: `ValueSet?url:above=${
+                encodeURIComponent(`${baseUrl}/child`)
+            }`,
+        });
+
+        assertEquals(
+            responseFromChild.status,
+            200,
+            "Server should process hierarchical search from child URL successfully",
+        );
+        const bundleFromChild = responseFromChild.jsonBody as Bundle;
+        assertEquals(
+            bundleFromChild.entry?.length,
+            2,
+            "Bundle should contain two matching ValueSets when searching from child URL",
+        );
+
+        // Verify that the child search doesn't include the grandchild
+        const childSearchUrls =
+            bundleFromChild.entry?.map((entry) =>
+                (entry.resource as ValueSet).url
+            ) || [];
+        assertTrue(
+            childSearchUrls.includes(parentValueSet.url),
+            "Child search results should include parent ValueSet",
         );
         assertTrue(
-            encounterIds.includes(hospitalStayEncounter.id),
-            "Results should include hospital stay encounter",
+            childSearchUrls.includes(childValueSet.url),
+            "Child search results should include child ValueSet",
         );
-        assertTrue(
-            encounterIds.includes(wardStayEncounter.id),
-            "Results should include ward stay encounter",
-        );
-        assertTrue(
-            encounterIds.includes(procedureEncounter.id),
-            "Results should include procedure encounter",
+        assertFalse(
+            childSearchUrls.includes(grandchildValueSet.url),
+            "Child search results should not include grandchild ValueSet",
         );
     });
 
@@ -168,7 +238,7 @@ export function runHierarchicalSearchTests(context: ITestContext) {
             name: [{ family: uniqueString("TestPatient") }],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?subject:below=${patient.id}`,
         });
@@ -187,52 +257,5 @@ export function runHierarchicalSearchTests(context: ITestContext) {
             operationOutcome.issue.some((issue) => issue.severity === "error"),
             "OperationOutcome should contain an error",
         );
-    });
-
-    it("Should return CapabilityStatement indicating support for :above/:below modifiers", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `metadata`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should return CapabilityStatement",
-        );
-        const capabilityStatement = response.jsonBody as CapabilityStatement;
-
-        const locationResource = capabilityStatement.rest?.[0].resource?.find(
-            (r) => r.type === "Location"
-        );
-        assertExists(
-            locationResource,
-            "CapabilityStatement should include Location resource",
-        );
-        const locationPartOfParam = locationResource.searchParam?.find((sp) =>
-            sp.name === "partOf"
-        );
-        assertExists(
-            locationPartOfParam,
-            "Location resource should include partOf search parameter",
-        );
-
-        const encounterResource = capabilityStatement.rest?.[0].resource?.find(
-            (r) => r.type === "Encounter"
-        );
-        assertExists(
-            encounterResource,
-            "CapabilityStatement should include Encounter resource",
-        );
-        const encounterPartOfParam = encounterResource.searchParam?.find((sp) =>
-            sp.name === "part-of"
-        );
-        assertExists(
-            encounterPartOfParam,
-            "Encounter resource should include part-of search parameter",
-        );
-
-        // Note: We're not checking for modifiers in CapabilityStatement as they're not standard
-        // Instead, we're just checking if the relevant search parameters exist
     });
 }

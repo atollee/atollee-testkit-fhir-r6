@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -25,7 +25,7 @@ export function runResourceSpecificParameterTests(context: ITestContext) {
             name: [{ given: [uniqueName], family: "Doe" }],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?name=${uniqueName}`,
         });
@@ -52,7 +52,7 @@ export function runResourceSpecificParameterTests(context: ITestContext) {
         const birthDate = "1990-01-01";
         await createTestPatient(context, { birthDate: birthDate });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?birthdate=${birthDate}`,
         });
@@ -86,7 +86,7 @@ export function runResourceSpecificParameterTests(context: ITestContext) {
             code: uniqueCode,
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?code=${uniqueCode}`,
         });
@@ -119,7 +119,7 @@ export function runResourceSpecificParameterTests(context: ITestContext) {
             effectiveDateTime: observationDate,
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?date=${observationDate}`,
         });
@@ -149,7 +149,7 @@ export function runResourceSpecificParameterTests(context: ITestContext) {
             name: [{ given: ["TestPatient"] }],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_id=${patient.id}`,
         });
@@ -182,7 +182,7 @@ export function runResourceSpecificParameterTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?identifier=${uniqueIdentifier}`,
         });

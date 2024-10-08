@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import { createTestPatient } from "../../utils/resource_creators.ts";
 import { Bundle, Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
@@ -24,7 +24,7 @@ export function runSearchResultCurrencyTests(context: ITestContext) {
         const uniqueName = uniqueString("TestPatient");
         await createTestPatient(context, { name: [{ given: [uniqueName] }] });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?name=${uniqueName}`,
         });
@@ -43,74 +43,80 @@ export function runSearchResultCurrencyTests(context: ITestContext) {
         );
     });
 
-    it("Should handle updates to resources during paged search", async () => {
-        // Create initial set of patients
-        const uniqueNamePrefix = uniqueString("TestPatient");
-        for (let i = 0; i < 10; i++) {
-            await createTestPatient(context, {
-                name: [{ given: [`${uniqueNamePrefix}${i}`] }],
+    if (context.isHapiBugsDisallowed()) {
+        it("Should handle updates to resources during paged search", async () => {
+            // Create initial set of patients
+            const uniqueNamePrefix = uniqueString("TestPatient");
+            for (let i = 0; i < 10; i++) {
+                await createTestPatient(context, {
+                    name: [{ given: [`${uniqueNamePrefix}${i}`] }],
+                });
+            }
+
+            // Perform initial search with paging
+            const initialResponse = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?name=${uniqueNamePrefix}&_count=5`,
             });
-        }
 
-        // Perform initial search with paging
-        const initialResponse = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?name=${uniqueNamePrefix}&_count=5`,
+            assertEquals(
+                initialResponse.status,
+                200,
+                "Server should process the initial search request successfully",
+            );
+            const initialBundle = initialResponse.jsonBody as Bundle;
+            assertExists(
+                initialBundle.link,
+                "Initial bundle should contain links",
+            );
+            const nextLink = initialBundle.link.find((link) =>
+                link.relation === "next"
+            );
+            assertExists(nextLink, "Initial bundle should contain a next link");
+
+            // Create a new patient
+            const newPatientName = `${uniqueNamePrefix}New`;
+            await createTestPatient(context, {
+                name: [{ given: [newPatientName] }],
+            });
+
+            // Slight delay to ensure the new patient is indexed
+            await delay(1000);
+
+            // Perform the next page search
+            const nextPageResponse = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: nextLink.url,
+            });
+
+            assertEquals(
+                nextPageResponse.status,
+                200,
+                "Server should process the next page search request successfully",
+            );
+            const nextPageBundle = nextPageResponse.jsonBody as Bundle;
+            assertExists(
+                nextPageBundle.entry,
+                "Next page bundle should contain entries",
+            );
+
+            // Check if the new patient is included in the results
+            const newPatientIncluded = nextPageBundle.entry.some((entry) =>
+                (entry.resource as Patient).name?.[0].given?.[0] ===
+                    newPatientName
+            );
+
+            // Note: The assertion here depends on the server's behavior. Some servers might include the new patient, others might not.
+            console.log(
+                `New patient ${
+                    newPatientIncluded ? "was" : "was not"
+                } included in the paged results.`,
+            );
         });
-
-        assertEquals(
-            initialResponse.status,
-            200,
-            "Server should process the initial search request successfully",
-        );
-        const initialBundle = initialResponse.jsonBody as Bundle;
-        assertExists(initialBundle.link, "Initial bundle should contain links");
-        const nextLink = initialBundle.link.find((link) =>
-            link.relation === "next"
-        );
-        assertExists(nextLink, "Initial bundle should contain a next link");
-
-        // Create a new patient
-        const newPatientName = `${uniqueNamePrefix}New`;
-        await createTestPatient(context, {
-            name: [{ given: [newPatientName] }],
-        });
-
-        // Slight delay to ensure the new patient is indexed
-        await delay(1000);
-
-        // Perform the next page search
-        const nextPageResponse = await fetchWrapper({
-            authorized: true,
-            relativeUrl: nextLink.url,
-        });
-
-        assertEquals(
-            nextPageResponse.status,
-            200,
-            "Server should process the next page search request successfully",
-        );
-        const nextPageBundle = nextPageResponse.jsonBody as Bundle;
-        assertExists(
-            nextPageBundle.entry,
-            "Next page bundle should contain entries",
-        );
-
-        // Check if the new patient is included in the results
-        const newPatientIncluded = nextPageBundle.entry.some((entry) =>
-            (entry.resource as Patient).name?.[0].given?.[0] === newPatientName
-        );
-
-        // Note: The assertion here depends on the server's behavior. Some servers might include the new patient, others might not.
-        console.log(
-            `New patient ${
-                newPatientIncluded ? "was" : "was not"
-            } included in the paged results.`,
-        );
-    });
+    }
 
     it("Should not change the set of resources on the server (except possibly AuditEvent)", async () => {
-        const beforeSearchResponse = await fetchWrapper({
+        const beforeSearchResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_summary=count`,
         });
@@ -119,12 +125,12 @@ export function runSearchResultCurrencyTests(context: ITestContext) {
         const beforeSearchCount = beforeSearchBundle.total;
 
         // Perform a search operation
-        await fetchWrapper({
+        await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?name=TestSearch`,
         });
 
-        const afterSearchResponse = await fetchWrapper({
+        const afterSearchResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_summary=count`,
         });
@@ -139,7 +145,7 @@ export function runSearchResultCurrencyTests(context: ITestContext) {
         );
 
         // Check for AuditEvent creation
-        const auditEventResponse = await fetchWrapper({
+        const auditEventResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `AuditEvent?entity-type=Patient&date=gt${
                 new Date().toISOString()

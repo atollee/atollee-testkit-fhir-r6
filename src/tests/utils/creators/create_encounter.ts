@@ -3,8 +3,11 @@
 import { Encounter, Reference } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { IIdentifierOptions } from "./types.ts";
+import { createIdentifierOptions } from "./utils.ts";
+import { assertTrue } from "../../../../deps.test.ts";
 
-export interface EncounterOptions {
+export interface EncounterOptions extends IIdentifierOptions {
     status?: Encounter["status"];
     class?: {
         system: string;
@@ -58,6 +61,7 @@ export async function createTestEncounter(
             start: new Date().toISOString(),
             end: new Date().toISOString(),
         },
+        identifier: createIdentifierOptions(options.identifier),
     };
 
     const mergedOptions = { ...defaultOptions, ...options };
@@ -84,5 +88,9 @@ export async function createTestEncounter(
         body: JSON.stringify(newEncounter),
     });
 
+    if (!response.success) {
+        console.log(JSON.stringify(response, null, 2));
+    }
+    assertTrue(response.success, "creation of encounter was successful");
     return response.jsonBody as Encounter;
 }

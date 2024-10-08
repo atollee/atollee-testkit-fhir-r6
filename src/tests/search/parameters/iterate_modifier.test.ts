@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -47,7 +47,7 @@ export function runIterateModifierTests(context: ITestContext) {
             name: [{ family: "Related", given: ["Person"] }],
         };
 
-        const relatedPersonResponse = await fetchWrapper({
+        const relatedPersonResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: "RelatedPerson",
             method: "POST",
@@ -58,7 +58,7 @@ export function runIterateModifierTests(context: ITestContext) {
             .jsonBody as RelatedPerson;
 
         // Link the patients and related person
-        await fetchWrapper({
+        await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient/${mainPatient.id}`,
             method: "PUT",
@@ -89,7 +89,7 @@ export function runIterateModifierTests(context: ITestContext) {
         });
 
         // Perform the search with iterate modifier
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?code=http://snomed.info/sct|3738000&_include=Observation:patient&_include:iterate=Patient:link`,
@@ -187,7 +187,7 @@ export function runIterateModifierTests(context: ITestContext) {
             agent: [{ who: { reference: `Patient/${mainPatient.id}` } }],
         };
 
-        await fetchWrapper({
+        await fetchSearchWrapper({
             authorized: true,
             relativeUrl: "Provenance",
             method: "POST",
@@ -195,7 +195,7 @@ export function runIterateModifierTests(context: ITestContext) {
         });
 
         // Perform the search with _revinclude and iterate modifier
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?_id=${mainPatient.id}&_revinclude=Observation:patient&_revinclude:iterate=Provenance:target`,

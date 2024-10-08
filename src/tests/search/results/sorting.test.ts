@@ -1,7 +1,7 @@
 // tests/search/parameters/sorting.test.ts
 
 import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -16,7 +16,7 @@ export function runSortingTests(context: ITestContext) {
             await createTestPatient(context, { name: [{ given: [name] }] });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_sort=name`,
         });
@@ -44,7 +44,7 @@ export function runSortingTests(context: ITestContext) {
             await createTestPatient(context, { name: [{ given: [name] }] });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_sort=-name`,
         });
@@ -77,7 +77,7 @@ export function runSortingTests(context: ITestContext) {
             name: [{ given: ["Alice"], family: "Jones" }],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_sort=family,given`,
         });
@@ -110,7 +110,7 @@ export function runSortingTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?subject=${patient.id}&_sort=date`,
         });
@@ -138,7 +138,7 @@ export function runSortingTests(context: ITestContext) {
             await createTestPatient(context, { name: [{ given: [name] }] });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_sort=name`,
         });
@@ -173,7 +173,7 @@ export function runSortingTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?subject=${patient.id}&_sort=code`,
         });

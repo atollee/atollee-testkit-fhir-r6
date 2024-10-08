@@ -3,6 +3,7 @@
 import { ImplementationGuide } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { createTestIdentifierString } from "./utils.ts";
 
 export interface ImplementationGuideOptions {
     url: string;
@@ -24,7 +25,7 @@ export async function createTestImplementationGuide(
         status: options.status || "active",
         dependsOn: options.dependsOn,
         fhirVersion: ["4.0.0"],
-        packageId: options.name + "-id",
+        packageId: createTestIdentifierString(),
     };
 
     const response = await fetchWrapper({

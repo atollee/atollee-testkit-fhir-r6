@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import { createTestObservation } from "../../utils/resource_creators.ts";
 import { Bundle } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
@@ -25,7 +25,7 @@ export function runLastUpdatedParameterTests(context: ITestContext) {
             code: uniqueString("TestCode"),
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?_lastUpdated=gt${testDate.toISOString()}`,
         });
@@ -52,7 +52,7 @@ export function runLastUpdatedParameterTests(context: ITestContext) {
             code: uniqueString("TestCode"),
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?_lastUpdated=gt${testDate.toISOString()}`,
         });
@@ -77,7 +77,7 @@ export function runLastUpdatedParameterTests(context: ITestContext) {
             code: uniqueString("TestCode"),
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?_lastUpdated=ge${startDate.toISOString()}&_lastUpdated=le${endDate.toISOString()}`,
@@ -97,7 +97,7 @@ export function runLastUpdatedParameterTests(context: ITestContext) {
     });
 
     it("Should handle invalid date format", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?_lastUpdated=invalid-date`,
         });
@@ -109,31 +109,33 @@ export function runLastUpdatedParameterTests(context: ITestContext) {
         );
     });
 
-    it("Should handle multiple resource types with _lastUpdated", async () => {
-        const testDate = new Date();
-        testDate.setDate(testDate.getDate() - 1); // Yesterday
+    if (context.isMultiTypeSearchSupported()) {
+        it("Should handle multiple resource types with _lastUpdated", async () => {
+            const testDate = new Date();
+            testDate.setDate(testDate.getDate() - 1); // Yesterday
 
-        // Create an observation
-        await createTestObservation(context, context.getValidPatientId(), {
-            code: uniqueString("TestCode"),
+            // Create an observation
+            await createTestObservation(context, context.getValidPatientId(), {
+                code: uniqueString("TestCode"),
+            });
+
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl:
+                    `?_type=Observation,Patient&_lastUpdated=gt${testDate.toISOString()}`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process _lastUpdated with multiple resource types successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertTrue(
+                bundle.entry.length > 0,
+                "Bundle should contain at least one entry",
+            );
         });
-
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl:
-                `?_type=Observation,Patient&_lastUpdated=gt${testDate.toISOString()}`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process _lastUpdated with multiple resource types successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertTrue(
-            bundle.entry.length > 0,
-            "Bundle should contain at least one entry",
-        );
-    });
+    }
 }

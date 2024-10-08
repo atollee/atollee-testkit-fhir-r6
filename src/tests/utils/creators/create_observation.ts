@@ -11,8 +11,11 @@ import {
 } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { createIdentifierOptions } from "./utils.ts";
+import { IIdentifierOptions } from "./types.ts";
+import { assertTrue } from "../../../../deps.test.ts";
 
-export interface ObservationOptions {
+export interface ObservationOptions extends IIdentifierOptions {
     code?: string;
     system?: string;
     value?: number;
@@ -30,6 +33,7 @@ export interface ObservationOptions {
     subject?: Reference;
     encounter?: Reference;
     effectiveDateTime?: string;
+    effectiveInstant?: string;
     valueQuantity?: Quantity;
     valueRange?: Range;
     valueString?: string;
@@ -38,7 +42,8 @@ export interface ObservationOptions {
     issued?: string;
     identifier?: Identifier[];
     meta?: Meta;
-    text?: Narrative; // Add this line
+    text?: Narrative;
+    derivedFrom?: Reference[];
 }
 
 export async function createTestObservation(
@@ -52,6 +57,7 @@ export async function createTestObservation(
         value: 100,
         unit: "mg/dL",
         status: "final",
+        identifier: createIdentifierOptions(options.identifier),
     };
     const mergedOptions = { ...defaultOptions, ...options };
     const newObservation: Observation = {
@@ -69,11 +75,13 @@ export async function createTestObservation(
         },
         encounter: mergedOptions.encounter,
         effectiveDateTime: mergedOptions.effectiveDateTime,
+        effectiveInstant: mergedOptions.effectiveInstant,
         issued: mergedOptions.issued,
         performer: mergedOptions.performer,
         valueCodeableConcept: mergedOptions.valueCodeableConcept,
         identifier: mergedOptions.identifier,
-        text: mergedOptions.text, // Add this line
+        text: mergedOptions.text,
+        derivedFrom: mergedOptions.derivedFrom,
     };
     if (mergedOptions.valueRange) {
         newObservation.valueRange = mergedOptions.valueRange;
@@ -98,5 +106,9 @@ export async function createTestObservation(
         method: "POST",
         body: JSON.stringify(newObservation),
     });
+    if (!response.success) {
+        console.log(JSON.stringify(response.jsonBody));
+    }
+    assertTrue(response.success, "test observation succesfully created");
     return response.jsonBody as Observation;
 }

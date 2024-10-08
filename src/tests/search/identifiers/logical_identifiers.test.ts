@@ -6,7 +6,7 @@ import {
     assertNotEquals,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import { createTestPatient } from "../../utils/resource_creators.ts";
 import { Bundle, OperationOutcome, Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
@@ -18,7 +18,7 @@ export function runLogicalIdentifiersTests(context: ITestContext) {
             active: true,
         });
 
-        const searchResponse = await fetchWrapper({
+        const searchResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_id=${patient.id}`,
         });
@@ -50,7 +50,7 @@ export function runLogicalIdentifiersTests(context: ITestContext) {
     it("Should return a bundle even when logical id does not exist", async () => {
         const nonExistentId = `non-existent-id-${Date.now()}`;
 
-        const searchResponse = await fetchWrapper({
+        const searchResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_id=${nonExistentId}`,
         });
@@ -100,17 +100,17 @@ export function runLogicalIdentifiersTests(context: ITestContext) {
             active: false,
         });
 
-        const searchResponseActive = await fetchWrapper({
+        const searchResponseActive = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_id=${patientActive.id}&active=true`,
         });
 
-        const searchResponseInactive = await fetchWrapper({
+        const searchResponseInactive = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_id=${patientInactive.id}&active=false`,
         });
 
-        const searchResponseMismatch = await fetchWrapper({
+        const searchResponseMismatch = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_id=${patientActive.id}&active=false`,
         });
@@ -146,7 +146,7 @@ export function runLogicalIdentifiersTests(context: ITestContext) {
             "Should find 1 inactive patient",
         );
         assertEquals(
-            bundleMismatch.entry?.length,
+            bundleMismatch.entry?.length ?? 0,
             0,
             "Should find 0 patients with mismatched criteria",
         );
@@ -158,7 +158,7 @@ export function runLogicalIdentifiersTests(context: ITestContext) {
             active: true,
         });
 
-        const searchResponse = await fetchWrapper({
+        const searchResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_id=${patient.id}&_include=Patient:link`,
         });

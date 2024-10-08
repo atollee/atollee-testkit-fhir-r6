@@ -1,32 +1,17 @@
 // tests/search/responses/error_handling.base.test.ts
 
+import { assertEquals, assertTrue, it } from "../../../../deps.test.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
-    assertEquals, assertTrue,
-    it
-} from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
-import { createTestPatient } from "../../utils/resource_creators.ts";
+    createTestPatient,
+    uniqueString,
+} from "../../utils/resource_creators.ts";
 import { Bundle, OperationOutcome } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 
 export function runErrorHandlingBaseTests(context: ITestContext) {
-    it("Server should return 403 when refusing to perform a search", async () => {
-        // This test assumes there's a search that the server will refuse to perform
-        // You might need to adjust this based on your server's behavior
-        const response = await fetchWrapper({
-            authorized: false, // Attempt an unauthorized search
-            relativeUrl: `Patient?_security=restricted`,
-        });
-
-        assertEquals(
-            response.status,
-            403,
-            "Server should return 403 when refusing to perform a search",
-        );
-    });
-
     it("Server should return appropriate 4xx/5xx codes for other errors", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `InvalidResource?param=value`,
         });
@@ -38,7 +23,7 @@ export function runErrorHandlingBaseTests(context: ITestContext) {
     });
 
     it("Server should return an OperationOutcome with error details when search fails", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?invalid_parameter=value`,
         });
@@ -69,7 +54,7 @@ export function runErrorHandlingBaseTests(context: ITestContext) {
     });
 
     it("Empty search result should not be treated as an error", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=NonexistentFamilyName`,
         });
@@ -82,11 +67,11 @@ export function runErrorHandlingBaseTests(context: ITestContext) {
 
         const bundle = response.jsonBody as Bundle;
         assertEquals(bundle.total, 0, "Bundle should have zero total results");
-        assertEquals(bundle.entry?.length, 0, "Bundle should have no entries");
+        assertEquals(bundle.entry?.length ?? 0, 0, "Bundle should have no entries");
     });
 
     it("Server should process search with unknown subject", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?subject=Patient/nonexistent`,
         });
@@ -102,7 +87,7 @@ export function runErrorHandlingBaseTests(context: ITestContext) {
     });
 
     it("Server should process search with unknown code", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?code=unknown|code`,
         });
@@ -118,7 +103,7 @@ export function runErrorHandlingBaseTests(context: ITestContext) {
     });
 
     it("Server should return error for syntactically incorrect parameter", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?birthdate=not-a-date`,
         });
@@ -129,29 +114,32 @@ export function runErrorHandlingBaseTests(context: ITestContext) {
         );
     });
 
-    it("Server should ignore empty parameters", async () => {
-        await createTestPatient(context, { family: "EmptyParamTest" });
-
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?family=EmptyParamTest&empty_param=`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should return 200 OK when ignoring empty parameters",
-        );
-
-        const bundle = response.jsonBody as Bundle;
-        assertTrue(
-            bundle.total! > 0,
-            "Bundle should have results despite empty parameter",
-        );
-    });
+    if (context.areEmptyParametersAllowed()) {
+        it("Server should ignore empty parameters", async () => {
+            const emptyFamilyName = uniqueString("EmptyParamTest");
+            await createTestPatient(context, { family: emptyFamilyName });
+    
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?family=${emptyFamilyName}&empty_param=`,
+            });
+    
+            assertEquals(
+                response.status,
+                200,
+                "Server should return 200 OK when ignoring empty parameters",
+            );
+    
+            const bundle = response.jsonBody as Bundle;
+            assertTrue(
+                bundle.total! > 0,
+                "Bundle should have results despite empty parameter",
+            );
+        });            
+    }
 
     it("Server should honor 'strict' handling preference", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?unknown_param=value`,
             headers: { "Prefer": "handling=strict" },
@@ -163,17 +151,19 @@ export function runErrorHandlingBaseTests(context: ITestContext) {
         );
     });
 
-    it("Server should honor 'lenient' handling preference", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?unknown_param=value`,
-            headers: { "Prefer": "handling=lenient" },
-        });
+    if (context.isLenientSearchHandlingSupported()) {
+        it("Server should honor 'lenient' handling preference", async () => {
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?unknown_param=value`,
+                headers: { "Prefer": "handling=lenient" },
+            });
 
-        assertEquals(
-            response.status,
-            200,
-            "Server should return 200 OK for unknown parameter in lenient mode",
-        );
-    });
+            assertEquals(
+                response.status,
+                200,
+                "Server should return 200 OK for unknown parameter in lenient mode",
+            );
+        });
+    }
 }

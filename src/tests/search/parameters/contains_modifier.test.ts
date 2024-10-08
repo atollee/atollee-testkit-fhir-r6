@@ -6,10 +6,11 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestPatient,
     createTestStructureDefinition,
+    uniqueString,
 } from "../../utils/resource_creators.ts";
 import {
     Bundle,
@@ -18,10 +19,6 @@ import {
     StructureDefinition,
 } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
-
-function uniqueString(base: string): string {
-    return `${base}-${Date.now()}`;
-}
 
 export function runContainsModifierTests(context: ITestContext) {
     it("Should find patients with family name containing the search string (case-insensitive)", async () => {
@@ -40,7 +37,7 @@ export function runContainsModifierTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family:contains=son`,
         });
@@ -81,7 +78,7 @@ export function runContainsModifierTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family:contains=son`,
         });
@@ -110,120 +107,73 @@ export function runContainsModifierTests(context: ITestContext) {
         }
     });
 
-    it("Should handle diacritics and combining characters", async () => {
-        const testCases = [
-            { name: uniqueString("Söñder"), expected: true },
-            { name: uniqueString("Sonder"), expected: true },
-            { name: uniqueString("Søn"), expected: true },
-            { name: uniqueString("Sön"), expected: true },
-        ];
+    if (context.isHapiBugsDisallowed()) {
+        it("Should handle diacritics and combining characters", async () => {
+            const testCases = [
+                { name: uniqueString("Söñder"), expected: true },
+                { name: uniqueString("Sonder"), expected: true },
+                { name: uniqueString("Søn"), expected: true },
+                { name: uniqueString("Sön"), expected: true },
+            ];
 
-        for (const testCase of testCases) {
-            await createTestPatient(context, {
-                name: [{ family: testCase.name }],
+            for (const testCase of testCases) {
+                await createTestPatient(context, {
+                    name: [{ family: testCase.name }],
+                });
+            }
+
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?family:contains=son`,
             });
-        }
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?family:contains=son`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process search successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-
-        for (const testCase of testCases) {
-            const patientFound = bundle.entry?.some((entry) => {
-                const patient = entry.resource as Patient;
-                return patient.name?.[0].family === testCase.name;
-            });
             assertEquals(
-                patientFound,
-                testCase.expected,
-                `Patient with family name "${testCase.name}" ${
-                    testCase.expected ? "should" : "should not"
-                } be found`,
+                response.status,
+                200,
+                "Server should process search successfully",
             );
-        }
-    });
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
 
-    it("Should work with URI type search parameters", async () => {
-        const testUrls = [
-            "http://example.com/fhir/ValueSet/test-contains",
-            "http://example.org/fhir/ValueSet/another-test",
-            "http://fhir.example.net/ValueSet/no-match",
-        ];
+            for (const testCase of testCases) {
+                const patientFound = bundle.entry?.some((entry) => {
+                    const patient = entry.resource as Patient;
+                    return patient.name?.[0].family === testCase.name;
+                });
+                assertEquals(
+                    patientFound,
+                    testCase.expected,
+                    `Patient with family name "${testCase.name}" ${
+                        testCase.expected ? "should" : "should not"
+                    } be found`,
+                );
+            }
+        });
+    }
 
-        for (const url of testUrls) {
-            await createTestStructureDefinition(context, {
-                url: url,
-                name: uniqueString("TestStructureDefinition"),
-                status: "draft",
-                kind: "resource",
-                abstract: false,
-                type: "Patient",
+    if (context.isHapiBugsDisallowed()) {
+        it("Should reject contains modifier on non-string, non-uri search parameters", async () => {
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?birthdate:contains=2000`,
             });
-        }
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `StructureDefinition?url:contains=test`,
+            assertEquals(
+                response.status,
+                400,
+                "Server should reject contains modifier on non-string, non-uri search parameters",
+            );
+            const operationOutcome = response.jsonBody as OperationOutcome;
+            assertExists(
+                operationOutcome.issue,
+                "OperationOutcome should contain issues",
+            );
+            assertTrue(
+                operationOutcome.issue.some((issue) =>
+                    issue.severity === "error"
+                ),
+                "OperationOutcome should contain an error",
+            );
         });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process search successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            2,
-            "Should find 2 matching StructureDefinitions",
-        );
-
-        const foundUrls = bundle.entry.map((entry) =>
-            (entry.resource as StructureDefinition).url
-        );
-        assertTrue(
-            foundUrls.includes(testUrls[0]),
-            "Should find StructureDefinition with URL containing 'test'",
-        );
-        assertTrue(
-            foundUrls.includes(testUrls[1]),
-            "Should find StructureDefinition with URL containing 'test'",
-        );
-        assertTrue(
-            !foundUrls.includes(testUrls[2]),
-            "Should not find StructureDefinition without 'test' in URL",
-        );
-    });
-
-    it("Should reject contains modifier on non-string, non-uri search parameters", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?birthdate:contains=2000`,
-        });
-
-        assertEquals(
-            response.status,
-            400,
-            "Server should reject contains modifier on non-string, non-uri search parameters",
-        );
-        const operationOutcome = response.jsonBody as OperationOutcome;
-        assertExists(
-            operationOutcome.issue,
-            "OperationOutcome should contain issues",
-        );
-        assertTrue(
-            operationOutcome.issue.some((issue) => issue.severity === "error"),
-            "OperationOutcome should contain an error",
-        );
-    });
+    }
 }

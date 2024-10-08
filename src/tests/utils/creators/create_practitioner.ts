@@ -2,16 +2,13 @@
 
 import { Address, Practitioner } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
-import { HumanNameOptions } from "./types.ts";
+import { HumanNameOptions, IIdentifierOptions } from "./types.ts";
 import { fetchWrapper } from "../fetch.ts";
 import { createHumanName } from "./utils.ts";
+import { createIdentifierOptions } from "./utils.ts";
 
-interface PractitionerOptions {
+interface PractitionerOptions extends IIdentifierOptions {
     name?: HumanNameOptions;
-    identifier?: Array<{
-        system?: string;
-        value: string;
-    }>;
     address?: Address[];
 }
 
@@ -20,7 +17,11 @@ export async function createTestPractitioner(
     options: PractitionerOptions = {},
 ): Promise<Practitioner> {
     const defaultName = { family: "TestPractitioner", given: ["Test"] };
-    const mergedOptions = { ...{ name: defaultName }, ...options };
+    const mergedOptions = {
+        ...{ name: defaultName },
+        ...options,
+        identifier: createIdentifierOptions(options.identifier),
+    };
 
     const newPractitioner: Practitioner = {
         resourceType: "Practitioner",

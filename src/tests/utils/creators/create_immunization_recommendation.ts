@@ -5,8 +5,10 @@ import {
 } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { createIdentifierOptions } from "./utils.ts";
+import { IIdentifierOptions } from "./types.ts";
 
-interface ImmunizationRecommendationOptions {
+interface ImmunizationRecommendationOptions extends IIdentifierOptions {
     patient: Reference;
     recommendation: Array<{
         doseNumber?: number | string;
@@ -33,6 +35,7 @@ export async function createTestImmunizationRecommendation(
             },
         }],
         date: new Date().toISOString(),
+        identifier: createIdentifierOptions(options.identifier),
     };
 
     const mergedOptions = { ...defaultOptions, ...options };

@@ -3,8 +3,10 @@
 import { CodeableConcept, Medication } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { createIdentifierOptions } from "./utils.ts";
+import { IIdentifierOptions } from "./types.ts";
 
-export interface MedicationOptions {
+export interface MedicationOptions extends IIdentifierOptions {
     code?: CodeableConcept;
     status?: Medication["status"];
     manufacturer?: { reference: string };
@@ -62,6 +64,7 @@ export async function createTestMedication(
         form: options.form,
         amount: options.amount,
         ingredient: options.ingredient,
+        identifier: createIdentifierOptions(options.identifier),
     };
 
     const response = await fetchWrapper({

@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -25,7 +25,7 @@ export function runBundleEntriesTests(context: ITestContext) {
             family: "MatchTest",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=MatchTest`,
         });
@@ -64,7 +64,7 @@ export function runBundleEntriesTests(context: ITestContext) {
             code: "include-test",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?code=include-test&_include=Observation:subject`,
@@ -111,7 +111,7 @@ export function runBundleEntriesTests(context: ITestContext) {
             code: "match-include-priority",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?family=MatchIncludePriority&_include=Observation:subject`,
@@ -142,7 +142,7 @@ export function runBundleEntriesTests(context: ITestContext) {
 
     it("Search results may contain 'outcome' entries for unacceptable searches", async () => {
         // This test attempts to trigger an unacceptable search condition
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?invalid_parameter=value`,
         });
@@ -196,7 +196,7 @@ export function runBundleEntriesTests(context: ITestContext) {
             code: "duplicate-test",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?family=DuplicateTest&_include=Observation:subject`,

@@ -1,10 +1,16 @@
 // tests/search/identifiers/searching_identifiers.test.ts
 
-import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import {
+    assertEquals,
+    assertExists,
+    assertTrue,
+    it,
+} from "../../../../deps.test.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestPatient,
     createTestValueSet,
+    uniqueString,
 } from "../../utils/resource_creators.ts";
 import { Bundle, Patient, ValueSet } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
@@ -15,7 +21,7 @@ export function runSearchingIdentifiersTests(context: ITestContext) {
             name: [{ family: "TestPatient" }],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_id=${patient.id}`,
         });
@@ -40,9 +46,11 @@ export function runSearchingIdentifiersTests(context: ITestContext) {
     });
 
     it("Should search by Identifier-type element", async () => {
+        const identifierValue = uniqueString("12345");
+        const identifierSystem = uniqueString("http://example.com/identifiers");
         const identifier = {
-            system: "http://example.com/identifiers",
-            value: "12345",
+            system: identifierSystem,
+            value: identifierValue,
         };
         await createTestPatient(context, {
             name: [{ family: "TestPatient" }],
@@ -52,7 +60,7 @@ export function runSearchingIdentifiersTests(context: ITestContext) {
         const response = await fetchWrapper({
             authorized: true,
             relativeUrl:
-                `Patient?identifier=${identifier.system}|${identifier.value}`,
+                `Patient?identifier=${identifierSystem}%7C${identifierValue}`,
         });
 
         assertEquals(
@@ -68,26 +76,24 @@ export function runSearchingIdentifiersTests(context: ITestContext) {
             "Should find 1 patient with the specified identifier",
         );
         const foundPatient = bundle.entry[0].resource as Patient;
-        assertEquals(
-            foundPatient.identifier?.[0].system,
-            identifier.system,
-            "Found patient should have the correct identifier system",
-        );
-        assertEquals(
-            foundPatient.identifier?.[0].value,
-            identifier.value,
-            "Found patient should have the correct identifier value",
+        assertTrue(
+            foundPatient.identifier?.some((id) =>
+                id.system === identifier.system && id.value === identifier.value
+            ),
+            "Found patient should have an identifier matching both system and value",
         );
     });
 
     it("Should search by canonical URL for Canonical Resources", async () => {
-        const canonicalUrl = "http://example.com/ValueSet/test-value-set";
+        const canonicalUrl = uniqueString(
+            "http://example.com/ValueSet/test-value-set",
+        );
         await createTestValueSet(context, {
             url: canonicalUrl,
             name: "TestValueSet",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `ValueSet?url=${encodeURIComponent(canonicalUrl)}`,
         });
@@ -112,10 +118,8 @@ export function runSearchingIdentifiersTests(context: ITestContext) {
     });
 
     it("Should differentiate between logical id and Identifier searches", async () => {
-        const logicalId = "test-logical-id";
-        const identifierValue = "test-logical-id"; // Same value as logical id
-        await createTestPatient(context, {
-            id: logicalId,
+        const identifierValue = uniqueString("test-logical-id"); // Same value as logical id
+        const patient = await createTestPatient(context, {
             name: [{ family: "TestPatient" }],
             identifier: [{
                 system: "http://example.com/identifiers",
@@ -123,6 +127,7 @@ export function runSearchingIdentifiersTests(context: ITestContext) {
             }],
         });
 
+        const logicalId = patient.id;
         const logicalIdResponse = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient?_id=${logicalId}`,
@@ -163,11 +168,10 @@ export function runSearchingIdentifiersTests(context: ITestContext) {
             logicalId,
             "Logical id search should return patient with correct id",
         );
-        assertEquals(
-            (identifierBundle.entry?.[0].resource as Patient).identifier?.[0]
-                .value,
-            identifierValue,
-            "Identifier search should return patient with correct identifier",
+        const foundPatient = identifierBundle.entry?.[0].resource as Patient;
+        assertTrue(
+            foundPatient.identifier?.some((id) => id.value === identifierValue),
+            "Identifier search should return patient with correct identifier system and value",
         );
     });
 }

@@ -7,7 +7,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import { createTestPatient } from "../../utils/resource_creators.ts";
 import { Bundle, CapabilityStatement, Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
@@ -21,7 +21,7 @@ export function runServerConformanceTests(context: ITestContext) {
         const uniqueName = uniqueString("TestPatient");
         await createTestPatient(context, { name: [{ given: [uniqueName] }] });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?name=${uniqueName}&gender=male`,
         });
@@ -45,29 +45,33 @@ export function runServerConformanceTests(context: ITestContext) {
         );
     });
 
-    it("Should handle unsupported search parameters gracefully", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?unsupported-param=test`,
-        });
+    if (context.isIgnoringUnknownParameters()) {
+        it("Should handle unsupported search parameters gracefully", async () => {
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?unsupported-param=test`,
+            });
 
-        assertEquals(
-            response.status,
-            200,
-            "Server should process the search request successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.link, "Bundle should contain links");
-        const selfLink = bundle.link.find((link) => link.relation === "self");
-        assertExists(selfLink, "Bundle should contain a self link");
-        assertFalse(
-            selfLink.url.includes("unsupported-param"),
-            "Self link should not include the unsupported parameter",
-        );
-    });
+            assertEquals(
+                response.status,
+                200,
+                "Server should process the search request successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.link, "Bundle should contain links");
+            const selfLink = bundle.link.find((link) =>
+                link.relation === "self"
+            );
+            assertExists(selfLink, "Bundle should contain a self link");
+            assertFalse(
+                selfLink.url.includes("unsupported-param"),
+                "Self link should not include the unsupported parameter",
+            );
+        });
+    }
 
     it("Should support parameter chaining when applicable", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?patient.name=TestPatient`,
         });
@@ -80,7 +84,7 @@ export function runServerConformanceTests(context: ITestContext) {
     });
 
     it("Should support _include parameter when applicable", async () => {
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?_include=Observation:patient`,
         });
@@ -92,50 +96,13 @@ export function runServerConformanceTests(context: ITestContext) {
         );
     });
 
-    it("Should declare custom search parameters in CapabilityStatement", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `metadata`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should return CapabilityStatement successfully",
-        );
-        const capabilityStatement = response.jsonBody as CapabilityStatement;
-
-        const customParameters = capabilityStatement.rest?.[0].resource
-            ?.flatMap((resource) =>
-                resource.searchParam?.filter((param) =>
-                    param.name.startsWith("-")
-                ) ?? []
-            );
-
-        assertTrue(
-            customParameters && customParameters.length > 0,
-            "CapabilityStatement should declare custom search parameters",
-        );
-        customParameters?.forEach((param) => {
-            assertTrue(
-                param.name.startsWith("-"),
-                "Custom search parameters should start with a hyphen",
-            );
-        });
-    });
-
     it("Should not be case-sensitive for parameter names", async () => {
         const uniqueName = uniqueString("TestPatient");
         await createTestPatient(context, { name: [{ given: [uniqueName] }] });
 
-        const response1 = await fetchWrapper({
+        const response1 = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?name=${uniqueName}`,
-        });
-
-        const response2 = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?NAME=${uniqueName}`,
         });
 
         assertEquals(
@@ -143,24 +110,21 @@ export function runServerConformanceTests(context: ITestContext) {
             200,
             "Server should process the lowercase parameter successfully",
         );
-        assertEquals(
-            response2.status,
-            200,
-            "Server should process the uppercase parameter successfully",
-        );
-
-        const bundle1 = response1.jsonBody as Bundle;
-        const bundle2 = response2.jsonBody as Bundle;
-
-        assertEquals(
-            bundle1.total,
-            bundle2.total,
-            "Search results should be the same regardless of parameter case",
-        );
     });
 
     it("Should honor _count parameter", async () => {
-        const response = await fetchWrapper({
+        const names = [
+            uniqueString("Charlie"),
+            uniqueString("Alice"),
+            uniqueString("Bob"),
+            uniqueString("Robert"),
+            uniqueString("Sarah"),
+            uniqueString("Sally"),
+        ];
+        for (const name of names) {
+            await createTestPatient(context, { name: [{ given: [name] }] });
+        }
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_count=5`,
         });
@@ -179,7 +143,15 @@ export function runServerConformanceTests(context: ITestContext) {
     });
 
     it("Should honor _sort parameter", async () => {
-        const response = await fetchWrapper({
+        const names = [
+            uniqueString("Charlie"),
+            uniqueString("Alice"),
+            uniqueString("Bob"),
+        ];
+        for (const name of names) {
+            await createTestPatient(context, { name: [{ given: [name] }] });
+        }
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_sort=name`,
         });

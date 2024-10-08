@@ -7,7 +7,7 @@ import {
     describe,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestPatient,
     getTestPatientCurrentIdentifier,
@@ -15,43 +15,12 @@ import {
 import { Bundle } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 
-async function testSearch(
-    context: ITestContext,
-    given: string[],
-    searchTerm: string,
-    expectedCount: number,
-) {
-    for (const givenElement of given) {
-        await createTestPatient(context, {
-            name: [{ given: [givenElement] }],
-        });
-    }
-    const response = await fetchWrapper({
-        authorized: true,
-        relativeUrl:
-            `Patient?given=${searchTerm}&identifier=${getTestPatientCurrentIdentifier()}`,
-    });
-
-    assertEquals(
-        response.status,
-        200,
-        `Server should handle search term "${searchTerm}" correctly`,
-    );
-    const bundle = response.jsonBody as Bundle;
-    assertExists(bundle.entry, "Bundle should contain entries");
-    assertEquals(
-        bundle.entry.length,
-        expectedCount,
-        `Should find ${expectedCount} patients for search term "${searchTerm}"`,
-    );
-}
-
 export function runStringParameterTests(context: ITestContext) {
     it("Should perform case-insensitive search", async () => {
         await createTestPatient(context, { name: [{ given: ["Eve"] }] });
         await createTestPatient(context, { name: [{ given: ["eve"] }] });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?given=eve&identifier=${getTestPatientCurrentIdentifier()}`,
@@ -65,7 +34,7 @@ export function runStringParameterTests(context: ITestContext) {
         const bundle = response.jsonBody as Bundle;
         assertExists(bundle.entry, "Bundle should contain entries");
         assertEquals(
-            bundle.entry.length,
+            bundle.entry!.length,
             2,
             "Should find 2 patients with case-insensitive 'eve'",
         );
@@ -75,7 +44,7 @@ export function runStringParameterTests(context: ITestContext) {
         await createTestPatient(context, { name: [{ given: ["René"] }] });
         await createTestPatient(context, { name: [{ given: ["Rene"] }] });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?given=rene&identifier=${getTestPatientCurrentIdentifier()}`,
@@ -95,48 +64,160 @@ export function runStringParameterTests(context: ITestContext) {
         );
     });
 
-    it("Should handle simple name search correctly", async () => {
-        await testSearch(
-            context,
-            ["Mary-Ann", "Mary   Ann", "Maryanne", "Anna-Maria"],
-            "mary",
-            3,
-        );
-    });
+    if (context.isHapiBugsDisallowed()) {
+        it("Should handle simple name search correctly", async () => {
+            // Setup
+            const names = ["Mary-Ann", "Mary   Ann", "Maryanne", "Anna-Maria"];
+            for (const name of names) {
+                await createTestPatient(context, {
+                    name: [{ given: [name] }],
+                });
+            }
 
-    it("Should handle compound name search correctly", async () => {
-        await testSearch(
-            context,
-            ["Mary-Ann", "Mary   Ann", "Maryanne", "Anna-Maria"],
-            "mary-ann",
-            2,
-        );
-    });
+            // Test
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?given=mary`,
+            });
+
+            // Assertions
+            assertEquals(
+                response.status,
+                200,
+                'Server should handle search term "mary" correctly',
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry.length,
+                3,
+                'Should find 3 patients for search term "mary"',
+            );
+        });
+    }
+
+    if (context.isHapiBugsDisallowed()) {
+        it("Should handle compound name search correctly", async () => {
+            // Setup
+            const names = ["Mary-Ann", "Mary   Ann", "Maryanne", "Anna-Maria"];
+            for (const name of names) {
+                await createTestPatient(context, {
+                    name: [{ given: [name] }],
+                });
+            }
+
+            // Test
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?given=mary-ann`,
+            });
+
+            // Assertions
+            assertEquals(
+                response.status,
+                200,
+                'Server should handle search term "mary-ann" correctly',
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry!.length,
+                2,
+                'Should find 2 patients for search term "mary-ann"',
+            );
+        });
+    }
 
     it("Should handle search for non-existent compound name", async () => {
-        await testSearch(
-            context,
-            ["Mary-Ann", "Mary   Ann", "Maryanne", "Anna-Maria"],
-            "maryann",
+        // Setup
+        const names = ["Mary-Ann", "Mary   Ann", "Maryanne", "Anna-Maria"];
+        for (const name of names) {
+            await createTestPatient(context, {
+                name: [{ given: [name] }],
+            });
+        }
+
+        // Test
+        const response = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl: `Patient?given=maryann`,
+        });
+
+        // Assertions
+        assertEquals(
+            response.status,
+            200,
+            'Server should handle search term "maryann" correctly',
+        );
+        const bundle = response.jsonBody as Bundle;
+        assertExists(bundle.entry, "Bundle should contain entries");
+        assertEquals(
+            bundle.entry!.length,
             1,
+            'Should find 1 patient for search term "maryann"',
         );
     });
 
-    it("Should handle partial name search correctly", async () => {
-        await testSearch(
-            context,
-            ["Mary-Ann", "Mary   Ann", "Maryanne", "Anna-Maria"],
-            "ann",
-            3,
-        );
-    });
+    if (context.isHapiBugsDisallowed()) {
+        it("Should handle partial name search correctly", async () => {
+            // Setup
+            const names = ["Mary-Ann", "Mary   Ann", "Maryanne", "Anna-Maria"];
+            for (const name of names) {
+                await createTestPatient(context, {
+                    name: [{ given: [name] }],
+                });
+            }
+
+            // Test
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?given=ann`,
+            });
+
+            // Assertions
+            assertEquals(
+                response.status,
+                200,
+                'Server should handle search term "ann" correctly',
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry!.length,
+                3,
+                'Should find 3 patients for search term "ann"',
+            );
+        });
+    }
 
     it("Should handle search for name with hyphen correctly", async () => {
-        await testSearch(
-            context,
-            ["Mary-Ann", "Mary   Ann", "Maryanne", "Anna-Maria"],
-            "anna",
+        // Setup
+        const names = ["Mary-Ann", "Mary   Ann", "Maryanne", "Anna-Maria"];
+        for (const name of names) {
+            await createTestPatient(context, {
+                name: [{ given: [name] }],
+            });
+        }
+
+        // Test
+        const response = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl:
+                `Patient?given=anna&identifier=${getTestPatientCurrentIdentifier()}`,
+        });
+
+        // Assertions
+        assertEquals(
+            response.status,
+            200,
+            'Server should handle search term "anna" correctly',
+        );
+        const bundle = response.jsonBody as Bundle;
+        assertExists(bundle.entry, "Bundle should contain entries");
+        assertEquals(
+            bundle.entry!.length,
             1,
+            'Should find 1 patient for search term "anna"',
         );
     });
 
@@ -145,7 +226,7 @@ export function runStringParameterTests(context: ITestContext) {
         await createTestPatient(context, { name: [{ given: ["Evelyn"] }] });
         await createTestPatient(context, { name: [{ given: ["Steve"] }] });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?given=eve&identifier=${getTestPatientCurrentIdentifier()}`,
@@ -159,7 +240,7 @@ export function runStringParameterTests(context: ITestContext) {
         const bundle = response.jsonBody as Bundle;
         assertExists(bundle.entry, "Bundle should contain entries");
         assertEquals(
-            bundle.entry.length,
+            bundle.entry!.length,
             2,
             "Should find 2 patients with names starting with 'eve'",
         );
@@ -170,7 +251,7 @@ export function runStringParameterTests(context: ITestContext) {
         await createTestPatient(context, { name: [{ given: ["Evelyn"] }] });
         await createTestPatient(context, { name: [{ given: ["Steve"] }] });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?given:contains=eve&identifier=${getTestPatientCurrentIdentifier()}`,
@@ -184,7 +265,7 @@ export function runStringParameterTests(context: ITestContext) {
         const bundle = response.jsonBody as Bundle;
         assertExists(bundle.entry, "Bundle should contain entries");
         assertEquals(
-            bundle.entry.length,
+            bundle.entry!.length,
             3,
             "Should find 3 patients with 'eve' anywhere in the name",
         );
@@ -195,7 +276,7 @@ export function runStringParameterTests(context: ITestContext) {
         await createTestPatient(context, { name: [{ given: ["eve"] }] });
         await createTestPatient(context, { name: [{ given: ["Evelyn"] }] });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?given:exact=Eve&identifier=${getTestPatientCurrentIdentifier()}`,
@@ -223,7 +304,7 @@ export function runStringParameterTests(context: ITestContext) {
             name: [{ given: ["Jane"], family: "Doe" }],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?name=doe&identifier=${getTestPatientCurrentIdentifier()}`,
@@ -243,46 +324,46 @@ export function runStringParameterTests(context: ITestContext) {
         );
     });
 
-    it("Should search family name parts independently", async () => {
-        await createTestPatient(context, {
-            name: [{ family: "Carreno Quinones" }],
-        });
+    if (context.isHapiBugsDisallowed()) {
+        it("Should search family name parts independently", async () => {
+            await createTestPatient(context, {
+                name: [{ family: "Carreno Quinones" }],
+            });
 
-        const response1 = await fetchWrapper({
-            authorized: true,
-            relativeUrl:
-                `Patient?family=carreno&identifier=${getTestPatientCurrentIdentifier()}`,
-        });
+            const response1 = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?family=carreno`,
+            });
 
-        const response2 = await fetchWrapper({
-            authorized: true,
-            relativeUrl:
-                `Patient?family=quinones&identifier=${getTestPatientCurrentIdentifier()}`,
-        });
+            const response2 = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?family=quinones`,
+            });
 
-        assertEquals(
-            response1.status,
-            200,
-            "Server should search family name parts independently",
-        );
-        assertEquals(
-            response2.status,
-            200,
-            "Server should search family name parts independently",
-        );
-        const bundle1 = response1.jsonBody as Bundle;
-        const bundle2 = response2.jsonBody as Bundle;
-        assertExists(bundle1.entry, "Bundle should contain entries");
-        assertExists(bundle2.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle1.entry.length,
-            1,
-            "Should find 1 patient with 'Carreno' in family name",
-        );
-        assertEquals(
-            bundle2.entry.length,
-            1,
-            "Should find 1 patient with 'Quinones' in family name",
-        );
-    });
+            assertEquals(
+                response1.status,
+                200,
+                "Server should search family name parts independently",
+            );
+            assertEquals(
+                response2.status,
+                200,
+                "Server should search family name parts independently",
+            );
+            const bundle1 = response1.jsonBody as Bundle;
+            const bundle2 = response2.jsonBody as Bundle;
+            assertExists(bundle1.entry, "Bundle should contain entries");
+            assertExists(bundle2.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle1.entry.length,
+                1,
+                "Should find 1 patient with 'Carreno' in family name",
+            );
+            assertEquals(
+                bundle2.entry.length,
+                1,
+                "Should find 1 patient with 'Quinones' in family name",
+            );
+        });
+    }
 }

@@ -4,7 +4,7 @@ import {
     assertEquals,
     assertExists, it
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestCondition,
     createTestEncounter,
@@ -32,7 +32,7 @@ export function runHasParameterTests(context: ITestContext) {
             code: "test-code-2",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_has:Observation:patient:code=test-code-1`,
         });
@@ -71,7 +71,7 @@ export function runHasParameterTests(context: ITestContext) {
             },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?_has:Observation:patient:code=test-code-1&_has:Condition:subject:code=test-condition`,
@@ -105,7 +105,7 @@ export function runHasParameterTests(context: ITestContext) {
             code: "test-code",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?_has:Encounter:patient:_has:Observation:encounter:code=test-code`,
@@ -143,7 +143,7 @@ export function runHasParameterTests(context: ITestContext) {
             code: "test-code",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?_has:Observation:patient:code=test-code&gender=male`,
@@ -172,7 +172,7 @@ export function runHasParameterTests(context: ITestContext) {
             code: "test-code",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?_has:Observation:patient:code=non-existent-code`,

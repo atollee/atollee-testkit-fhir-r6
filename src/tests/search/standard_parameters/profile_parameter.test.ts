@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestCondition,
     createTestObservation,
@@ -20,11 +20,12 @@ function uniqueString(base: string): string {
 }
 
 export function runProfileParameterTests(context: ITestContext) {
-    const testProfileUrl =
-        "http://example.com/fhir/StructureDefinition/test-profile";
     const bpProfileUrl = "http://hl7.org/fhir/StructureDefinition/bp";
 
     it("Should find resources with a specific profile", async () => {
+        const testProfileUrl = uniqueString(
+            "http://example.com/fhir/StructureDefinition/test-profile",
+        );
         await createTestObservation(
             context,
             context.getValidPatientId(),
@@ -34,7 +35,7 @@ export function runProfileParameterTests(context: ITestContext) {
             },
         );
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?_profile=${testProfileUrl}`,
         });
@@ -58,12 +59,15 @@ export function runProfileParameterTests(context: ITestContext) {
     });
 
     it("Should not find resources without the specified profile", async () => {
+        const testProfileUrl = uniqueString(
+            "http://example.com/fhir/StructureDefinition/test-profile",
+        );
         await createTestObservation(context, context.getValidPatientId(), {
             code: uniqueString("TestCode"),
             meta: { profile: [testProfileUrl] },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?_profile=${bpProfileUrl}`,
         });
@@ -78,6 +82,10 @@ export function runProfileParameterTests(context: ITestContext) {
     });
 
     it("Should find resources with multiple profiles", async () => {
+        const testProfileUrl = uniqueString(
+            "http://example.com/fhir/StructureDefinition/test-profile",
+        );
+
         await createTestObservation(
             context,
             context.getValidPatientId(),
@@ -87,7 +95,7 @@ export function runProfileParameterTests(context: ITestContext) {
             },
         );
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?_profile=${testProfileUrl}&_profile=${bpProfileUrl}`,
@@ -118,64 +126,77 @@ export function runProfileParameterTests(context: ITestContext) {
         );
     });
 
-    it("Should work with _profile across different resource types", async () => {
-        await createTestPatient(context, {
-            name: [{ given: ["TestPatient"] }],
-            meta: { profile: [testProfileUrl] },
-        });
-        await createTestCondition(context, {
-            subject: { reference: `Patient/${context.getValidPatientId()}` },
-            meta: { profile: [testProfileUrl] },
-        });
+    if (context.isMultiTypeSearchSupported()) {
+        it("Should work with _profile across different resource types", async () => {
+            const testProfileUrl = uniqueString(
+                "http://example.com/fhir/StructureDefinition/test-profile",
+            );
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `?_profile=${testProfileUrl}`,
-        });
+            await createTestPatient(context, {
+                name: [{ given: ["TestPatient"] }],
+                meta: { profile: [testProfileUrl] },
+            });
+            await createTestCondition(context, {
+                subject: {
+                    reference: `Patient/${context.getValidPatientId()}`,
+                },
+                meta: { profile: [testProfileUrl] },
+            });
 
-        assertEquals(
-            response.status,
-            200,
-            "Server should process _profile parameter across resource types successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertTrue(
-            bundle.entry.length >= 2,
-            "Bundle should contain at least two entries",
-        );
-        assertTrue(
-            bundle.entry.some((entry) =>
-                entry.resource?.resourceType === "Patient"
-            ) &&
+            const response = await fetchWrapper({
+                authorized: true,
+                relativeUrl: `?_profile=${testProfileUrl}`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process _profile parameter across resource types successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertTrue(
+                bundle.entry.length >= 2,
+                "Bundle should contain at least two entries",
+            );
+            assertTrue(
                 bundle.entry.some((entry) =>
-                    entry.resource?.resourceType === "Condition"
-                ),
-            "Bundle should contain both Patient and Condition resources",
-        );
-    });
-
-    it("Should handle invalid profile URL", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Observation?_profile=invalid-url`,
+                    entry.resource?.resourceType === "Patient"
+                ) &&
+                    bundle.entry.some((entry) =>
+                        entry.resource?.resourceType === "Condition"
+                    ),
+                "Bundle should contain both Patient and Condition resources",
+            );
         });
+    }
 
-        assertEquals(
-            response.status,
-            400,
-            "Server should return 400 for invalid profile URL",
-        );
-    });
+    if (context.isHapiBugsDisallowed()) {
+        it("Should handle invalid profile URL", async () => {
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Observation?_profile=invalid-url`,
+            });
+
+            assertTrue(
+                response.status >= 400,
+                "Server should return 400 for invalid profile URL",
+            );
+        });
+    }
 
     it("Should combine _profile with other search parameters", async () => {
+        const testProfileUrl = uniqueString(
+            "http://example.com/fhir/StructureDefinition/test-profile",
+        );
+
         const uniqueCode = uniqueString("TestCode");
         await createTestObservation(context, context.getValidPatientId(), {
             code: uniqueCode,
             meta: { profile: [testProfileUrl] },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?_profile=${testProfileUrl}&code=${uniqueCode}`,

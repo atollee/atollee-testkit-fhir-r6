@@ -1,7 +1,7 @@
 // tests/search/parameters/matching_and_cardinality.test.ts
 
 import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import { createTestPatient } from "../../utils/resource_creators.ts";
 import { Bundle, Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
@@ -13,7 +13,7 @@ export function runMatchingAndCardinalityTests(context: ITestContext) {
             given: ["FirstName", "MiddleName"],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?given=FirstName`,
         });
@@ -44,7 +44,7 @@ export function runMatchingAndCardinalityTests(context: ITestContext) {
             given: ["FirstName", "MiddleName"],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?given=MiddleName`,
         });
@@ -77,7 +77,7 @@ export function runMatchingAndCardinalityTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?address-city=New York`,
         });
@@ -110,7 +110,7 @@ export function runMatchingAndCardinalityTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?address-city=Los Angeles`,
         });
@@ -143,7 +143,7 @@ export function runMatchingAndCardinalityTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?identifier=http://example.com/id/mrn|12345`,
         });
@@ -176,7 +176,7 @@ export function runMatchingAndCardinalityTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?identifier=http://example.com/id/ssn|987-65-4321`,

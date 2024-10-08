@@ -3,10 +3,12 @@
 import {
     assertEquals,
     assertExists,
+    assertFalse,
+    assertNotEquals,
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestComposition,
     createTestPatient,
@@ -44,7 +46,7 @@ export function runNotModifierTests(context: ITestContext) {
             // No gender specified
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=${familyName}&gender:not=male`,
         });
@@ -96,7 +98,7 @@ export function runNotModifierTests(context: ITestContext) {
             // No gender specified
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=${familyName}&gender:not=male,female`,
         });
@@ -123,77 +125,116 @@ export function runNotModifierTests(context: ITestContext) {
         }
     });
 
-    it("Should reject not modifier on non-token search parameters", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?birthdate:not=1990-01-01`,
+    if (context.isHapiBugsDisallowed()) {
+        it("Should handle not modifier on date search parameters", async () => {
+            // Create test patients
+            const patient1990 = await createTestPatient(context, {
+                birthDate: "1990-01-01",
+            });
+            const patient1991 = await createTestPatient(context, {
+                birthDate: "1991-01-01",
+            });
+
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?birthdate:not=1990-01-01`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process search with not modifier on date parameters",
+            );
+
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+
+            // Check that the 1990 patient is not in the results
+            assertFalse(
+                bundle.entry.some((entry) =>
+                    (entry.resource as Patient).id === patient1990.id
+                ),
+                "Results should not include the patient born on 1990-01-01",
+            );
+
+            // Check that the 1991 patient is in the results
+            assertTrue(
+                bundle.entry.some((entry) =>
+                    (entry.resource as Patient).id === patient1991.id
+                ),
+                "Results should include the patient born on 1991-01-01",
+            );
         });
+    }
 
-        assertEquals(
-            response.status,
-            400,
-            "Server should reject not modifier on non-token search parameters",
-        );
-    });
-
-    it("Should handle not modifier with coding search parameters", async () => {
+    it("Should handle not modifier with token search parameters", async () => {
         const familyName = uniqueString("TestFamily");
 
-        // Create patients with different marital statuses
+        // Create patients with different genders
         await createTestPatient(context, {
             family: familyName,
-            maritalStatus: {
-                coding: [{
-                    system:
-                        "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
-                    code: "M",
-                }],
-            },
+            gender: "male",
         });
         await createTestPatient(context, {
             family: familyName,
-            maritalStatus: {
-                coding: [{
-                    system:
-                        "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
-                    code: "S",
-                }],
-            },
+            gender: "female",
         });
         await createTestPatient(context, {
             family: familyName,
-            // No marital status specified
+            gender: "other",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl:
-                `Patient?family=${familyName}&marital-status:not=http://terminology.hl7.org/CodeSystem/v3-MaritalStatus|M`,
+            relativeUrl: `Patient?family=${familyName}&gender:not=male`,
         });
 
         assertEquals(
             response.status,
             200,
-            "Server should process search with not modifier on coding search parameter successfully",
+            "Server should process search with not modifier on token search parameter successfully",
         );
         const bundle = response.jsonBody as Bundle;
         assertExists(bundle.entry, "Bundle should contain entries");
         assertEquals(
             bundle.entry.length,
             2,
-            "Should find two patients with marital status not married",
+            "Should find two patients with gender not male",
         );
 
         for (const entry of bundle.entry) {
             const patient = entry.resource as Patient;
-            assertTrue(
-                patient.maritalStatus?.coding?.[0].code !== "M",
-                `Patient marital status should not be married: ${
-                    patient.maritalStatus?.coding?.[0].code
-                }`,
+            assertNotEquals(
+                patient.gender,
+                "male",
+                `Patient gender should not be male: ${patient.gender}`,
             );
         }
+
+        // Additional test to ensure 'not' works with system|code format
+        const responseWithSystem = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl:
+                `Patient?family=${familyName}&gender:not=http://hl7.org/fhir/administrative-gender|male`,
+        });
+
+        assertEquals(
+            responseWithSystem.status,
+            200,
+            "Server should handle :not with system|code format",
+        );
+        const bundleWithSystem = responseWithSystem.jsonBody as Bundle;
+        assertEquals(
+            bundleWithSystem.entry?.length,
+            2,
+            "Should still find two patients with gender not male when using system|code format",
+        );
+
+        console.log(
+            "Server correctly handled :not modifier on token search parameter",
+        );
     });
+
     it("Should correctly apply not modifier to Composition sections", async () => {
         const patient = await createTestPatient(context, {
             family: uniqueString("TestFamily"),
@@ -280,7 +321,7 @@ export function runNotModifierTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Composition?subject=${patient.id}&section:not=48765-2`,

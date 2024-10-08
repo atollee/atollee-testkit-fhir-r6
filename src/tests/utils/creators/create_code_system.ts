@@ -1,8 +1,10 @@
 import { CodeSystem } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { IIdentifierOptions } from "./types.ts";
+import { createIdentifierOptions } from "../resource_creators.ts";
 
-export interface CodeSystemOptions {
+export interface CodeSystemOptions extends IIdentifierOptions {
     name: string;
     url: string;
     status?: "draft" | "active" | "retired" | "unknown";
@@ -30,6 +32,7 @@ export async function createTestCodeSystem(
                 display: "Test Code",
             },
         ],
+        identifier: createIdentifierOptions(options.identifier),
     };
 
     const response = await fetchWrapper({

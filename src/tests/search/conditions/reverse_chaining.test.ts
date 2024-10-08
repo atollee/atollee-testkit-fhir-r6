@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestAuditEvent,
     createTestEncounter,
@@ -29,7 +29,7 @@ export function runReverseChainedParametersTests(context: ITestContext) {
             status: "final",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_has:Observation:patient:code=1234-5`,
         });
@@ -69,7 +69,7 @@ export function runReverseChainedParametersTests(context: ITestContext) {
             status: "final",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_has:Observation:patient:code=123,456`,
         });
@@ -120,7 +120,7 @@ export function runReverseChainedParametersTests(context: ITestContext) {
             status: "final",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?_has:Observation:patient:code=123&_has:Observation:patient:code=456`,
@@ -145,91 +145,105 @@ export function runReverseChainedParametersTests(context: ITestContext) {
         );
     });
 
-    it("Should handle nested _has parameters", async () => {
-        const patient = await createTestPatient(context, {
-            name: [{ given: ["TestPatient"], family: "ForNestedHas" }],
+    if (context.isHasForChainedSearchesSupported()) {
+        it("Should handle nested _has parameters", async () => {
+            const patient = await createTestPatient(context, {
+                name: [{ given: ["TestPatient"], family: "ForNestedHas" }],
+            });
+
+            const observation = await createTestObservation(
+                context,
+                patient.id!,
+                {
+                    status: "final",
+                },
+            );
+
+            await createTestAuditEvent(context, {
+                entity: [{ reference: `Observation/${observation.id}` }],
+                agent: [{ who: { identifier: { value: "MyUserId" } } }],
+            });
+
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl:
+                    `Patient?_has:Observation:patient:_has:AuditEvent:entity:agent.identifier=MyUserId`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process nested _has parameters successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry.length,
+                1,
+                "Results should include only one patient",
+            );
+            assertEquals(
+                (bundle.entry[0].resource as Patient).id,
+                patient.id,
+                "Results should include the patient referenced by the Observation with the specific AuditEvent",
+            );
         });
+    }
 
-        const observation = await createTestObservation(context, patient.id!, {
-            status: "final",
+    if (context.isHasForChainedSearchesSupported()) {
+        it("Should handle _has parameter in chained-searches", async () => {
+            const group = await createTestGroup(context, {
+                type: "person",
+                actual: true,
+            });
+
+            const patient = await createTestPatient(context, {
+                name: [{
+                    given: ["TestPatient"],
+                    family: "ForGroupMembership",
+                }],
+            });
+
+            await fetchSearchWrapper({
+                authorized: true,
+                method: "PUT",
+                relativeUrl: `Group/${group.id}`,
+                body: JSON.stringify({
+                    ...group,
+                    member: [{
+                        entity: { reference: `Patient/${patient.id}` },
+                    }],
+                }),
+            });
+
+            const encounter = await createTestEncounter(context, {
+                status: "finished",
+                subject: { reference: `Patient/${patient.id}` },
+            });
+
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl:
+                    `Encounter?patient._has:Group:member:_id=${group.id}`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process _has parameter in chained-search successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertEquals(
+                bundle.entry.length,
+                1,
+                "Results should include only one encounter",
+            );
+            assertEquals(
+                (bundle.entry[0].resource as Encounter).id,
+                encounter.id,
+                "Results should include the encounter for the patient who is a member of the specified group",
+            );
         });
-
-        await createTestAuditEvent(context, {
-            entity: [{ reference: `Observation/${observation.id}` }],
-            agent: [{ who: { identifier: { value: "MyUserId" } } }],
-        });
-
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl:
-                `Patient?_has:Observation:patient:_has:AuditEvent:entity:agent.identifier=MyUserId`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process nested _has parameters successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            1,
-            "Results should include only one patient",
-        );
-        assertEquals(
-            (bundle.entry[0].resource as Patient).id,
-            patient.id,
-            "Results should include the patient referenced by the Observation with the specific AuditEvent",
-        );
-    });
-
-    it("Should handle _has parameter in chained-searches", async () => {
-        const group = await createTestGroup(context, {
-            type: "person",
-            actual: true,
-        });
-
-        const patient = await createTestPatient(context, {
-            name: [{ given: ["TestPatient"], family: "ForGroupMembership" }],
-        });
-
-        await fetchWrapper({
-            authorized: true,
-            method: "PUT",
-            relativeUrl: `Group/${group.id}`,
-            body: JSON.stringify({
-                ...group,
-                member: [{ entity: { reference: `Patient/${patient.id}` } }],
-            }),
-        });
-
-        const encounter = await createTestEncounter(context, {
-            status: "finished",
-            subject: { reference: `Patient/${patient.id}` },
-        });
-
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Encounter?patient._has:Group:member:_id=${group.id}`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process _has parameter in chained-search successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            1,
-            "Results should include only one encounter",
-        );
-        assertEquals(
-            (bundle.entry[0].resource as Encounter).id,
-            encounter.id,
-            "Results should include the encounter for the patient who is a member of the specified group",
-        );
-    });
+    }
 }

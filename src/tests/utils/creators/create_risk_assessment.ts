@@ -5,9 +5,11 @@ import {
 } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { createIdentifierOptions } from "./utils.ts";
+import { IIdentifierOptions } from "./types.ts";
 
 // Add this interface
-interface RiskAssessmentOptions {
+interface RiskAssessmentOptions extends IIdentifierOptions {
     subject: Reference;
     prediction?: Array<{
         probabilityDecimal?: number;
@@ -32,7 +34,11 @@ export async function createTestRiskAssessment(
         }],
     };
 
-    const mergedOptions = { ...defaultOptions, ...options };
+    const mergedOptions = {
+        ...defaultOptions,
+        ...options,
+        identifier: createIdentifierOptions(options.identifier),
+    };
 
     const newRiskAssessment: RiskAssessment = {
         resourceType: "RiskAssessment",

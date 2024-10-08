@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestAllergyIntolerance,
     createTestPatient,
@@ -20,46 +20,59 @@ function uniqueString(base: string): string {
 
 export function runJoiningMultipleValuesTests(context: ITestContext) {
     it("AND, Array, Simple: Intersection of records that contain at least one match for each search criteria", async () => {
-        const allergy1 = await createTestAllergyIntolerance(context, {
-            clinicalStatus: {
-                coding: [
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "active",
-                    },
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "resolved",
-                    },
-                ],
+        const patient = await createTestPatient(context, {});
+        const allergy1 = await createTestAllergyIntolerance(
+            context,
+            patient.id!,
+            {
+                clinicalStatus: {
+                    coding: [
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "active",
+                        },
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "resolved",
+                        },
+                    ],
+                },
             },
-        });
-        const allergy2 = await createTestAllergyIntolerance(context, {
-            clinicalStatus: {
-                coding: [
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "active",
-                    },
-                ],
+        );
+        const allergy2 = await createTestAllergyIntolerance(
+            context,
+            patient.id!,
+            {
+                clinicalStatus: {
+                    coding: [
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "active",
+                        },
+                    ],
+                },
             },
-        });
-        const allergy3 = await createTestAllergyIntolerance(context, {
-            clinicalStatus: {
-                coding: [
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "resolved",
-                    },
-                ],
+        );
+        const allergy3 = await createTestAllergyIntolerance(
+            context,
+            patient.id!,
+            {
+                clinicalStatus: {
+                    coding: [
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "resolved",
+                        },
+                    ],
+                },
             },
-        });
+        );
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `AllergyIntolerance?clinical-status=active&clinical-status=resolved`,
@@ -86,45 +99,58 @@ export function runJoiningMultipleValuesTests(context: ITestContext) {
     });
 
     it("OR, Array, Simple: Union of records that contain at least one match for each search criteria", async () => {
-        const allergy1 = await createTestAllergyIntolerance(context, {
-            clinicalStatus: {
-                coding: [
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "active",
-                    },
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "resolved",
-                    },
-                ],
+        const patient = await createTestPatient(context, {});
+        const allergy1 = await createTestAllergyIntolerance(
+            context,
+            patient.id!,
+            {
+                clinicalStatus: {
+                    coding: [
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "active",
+                        },
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "resolved",
+                        },
+                    ],
+                },
             },
-        });
-        const allergy2 = await createTestAllergyIntolerance(context, {
-            clinicalStatus: {
-                coding: [
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "active",
-                    },
-                ],
+        );
+        const allergy2 = await createTestAllergyIntolerance(
+            context,
+            patient.id!,
+            {
+                clinicalStatus: {
+                    coding: [
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "active",
+                        },
+                    ],
+                },
             },
-        });
-        const allergy3 = await createTestAllergyIntolerance(context, {
-            clinicalStatus: {
-                coding: [
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "resolved",
-                    },
-                ],
+        );
+        const allergy3 = await createTestAllergyIntolerance(
+            context,
+            patient.id!,
+            {
+                clinicalStatus: {
+                    coding: [
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "resolved",
+                        },
+                    ],
+                },
             },
-        });
-        await createTestAllergyIntolerance(context, {
+        );
+        await createTestAllergyIntolerance(context, patient.id!, {
             clinicalStatus: {
                 coding: [
                     {
@@ -136,7 +162,7 @@ export function runJoiningMultipleValuesTests(context: ITestContext) {
             },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `AllergyIntolerance?clinical-status=active,resolved`,
         });
@@ -171,7 +197,28 @@ export function runJoiningMultipleValuesTests(context: ITestContext) {
     });
 
     it("AND, Array, Simple: Intersection of records that contain at least one match for each search criteria", async () => {
-        const allergy1 = await createTestAllergyIntolerance(context, {
+        const patient = await createTestPatient(context, {});
+        const allergy1 = await createTestAllergyIntolerance(
+            context,
+            patient.id!,
+            {
+                clinicalStatus: {
+                    coding: [
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "active",
+                        },
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "resolved",
+                        },
+                    ],
+                },
+            },
+        );
+        await createTestAllergyIntolerance(context, patient.id!, {
             clinicalStatus: {
                 coding: [
                     {
@@ -179,26 +226,10 @@ export function runJoiningMultipleValuesTests(context: ITestContext) {
                             "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
                         code: "active",
                     },
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "resolved",
-                    },
                 ],
             },
         });
-        await createTestAllergyIntolerance(context, {
-            clinicalStatus: {
-                coding: [
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "active",
-                    },
-                ],
-            },
-        });
-        await createTestAllergyIntolerance(context, {
+        await createTestAllergyIntolerance(context, patient.id!, {
             clinicalStatus: {
                 coding: [
                     {
@@ -210,7 +241,7 @@ export function runJoiningMultipleValuesTests(context: ITestContext) {
             },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `AllergyIntolerance?clinical-status=active&clinical-status=resolved`,
@@ -237,45 +268,58 @@ export function runJoiningMultipleValuesTests(context: ITestContext) {
     });
 
     it("OR, Array, Simple: Union of records that contain at least one match for each search criteria", async () => {
-        const allergy1 = await createTestAllergyIntolerance(context, {
-            clinicalStatus: {
-                coding: [
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "active",
-                    },
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "resolved",
-                    },
-                ],
+        const patient = await createTestPatient(context, {});
+        const allergy1 = await createTestAllergyIntolerance(
+            context,
+            patient.id!,
+            {
+                clinicalStatus: {
+                    coding: [
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "active",
+                        },
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "resolved",
+                        },
+                    ],
+                },
             },
-        });
-        const allergy2 = await createTestAllergyIntolerance(context, {
-            clinicalStatus: {
-                coding: [
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "active",
-                    },
-                ],
+        );
+        const allergy2 = await createTestAllergyIntolerance(
+            context,
+            patient.id!,
+            {
+                clinicalStatus: {
+                    coding: [
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "active",
+                        },
+                    ],
+                },
             },
-        });
-        const allergy3 = await createTestAllergyIntolerance(context, {
-            clinicalStatus: {
-                coding: [
-                    {
-                        system:
-                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                        code: "resolved",
-                    },
-                ],
+        );
+        const allergy3 = await createTestAllergyIntolerance(
+            context,
+            patient.id!,
+            {
+                clinicalStatus: {
+                    coding: [
+                        {
+                            system:
+                                "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                            code: "resolved",
+                        },
+                    ],
+                },
             },
-        });
-        await createTestAllergyIntolerance(context, {
+        );
+        await createTestAllergyIntolerance(context, patient.id!, {
             clinicalStatus: {
                 coding: [
                     {
@@ -287,7 +331,7 @@ export function runJoiningMultipleValuesTests(context: ITestContext) {
             },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `AllergyIntolerance?clinical-status=active,resolved`,
         });
@@ -333,7 +377,7 @@ export function runJoiningMultipleValuesTests(context: ITestContext) {
         await createTestPatient(context, { name: [{ given: [uniqueValueA] }] });
         await createTestPatient(context, { name: [{ family: uniqueValueB }] });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?name=${uniqueValueA}&name=${uniqueValueB}`,
         });
@@ -377,7 +421,7 @@ export function runJoiningMultipleValuesTests(context: ITestContext) {
         });
         await createTestPatient(context, { name: [{ given: ["OtherValue"] }] });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?name=${uniqueValueA},${uniqueValueB}`,
         });

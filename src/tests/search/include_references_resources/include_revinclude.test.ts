@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestMedicationRequest,
     createTestObservation,
@@ -25,7 +25,7 @@ export function runIncludeRevincludeTests(context: ITestContext) {
             code: "test-code",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?_id=${observation.id}&_include=Observation:subject`,
@@ -66,7 +66,7 @@ export function runIncludeRevincludeTests(context: ITestContext) {
             code: "test-code",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?_id=${patient.id}&_revinclude=Observation:subject`,
@@ -110,7 +110,7 @@ export function runIncludeRevincludeTests(context: ITestContext) {
             status: "active",
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_id=${patient.id}&_revinclude=*`,
         });

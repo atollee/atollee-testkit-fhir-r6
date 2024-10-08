@@ -1,10 +1,16 @@
 // tests/search/identifiers/identifiers_and_references.test.ts
 
-import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import {
+    assertEquals,
+    assertExists,
+    assertTrue,
+    it,
+} from "../../../../deps.test.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestEncounter,
     createTestPatient,
+    uniqueString,
 } from "../../utils/resource_creators.ts";
 import { Bundle, Encounter, Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
@@ -20,7 +26,7 @@ export function runIdentifiersAndReferencesTests(context: ITestContext) {
             identifier: [patientIdentifier],
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?identifier=${patientIdentifier.system}|${patientIdentifier.value}`,
@@ -40,22 +46,19 @@ export function runIdentifiersAndReferencesTests(context: ITestContext) {
         );
 
         const patient = bundle.entry[0].resource as Patient;
-        assertEquals(
-            patient.identifier?.[0].system,
-            patientIdentifier.system,
-            "Patient should have the correct identifier system",
-        );
-        assertEquals(
-            patient.identifier?.[0].value,
-            patientIdentifier.value,
-            "Patient should have the correct identifier value",
+        assertTrue(
+            patient.identifier?.some((id) =>
+                id.system === patientIdentifier.system &&
+                id.value === patientIdentifier.value
+            ),
+            "Patient should have the correct identifier system and identifier value",
         );
     });
 
     it("Should search for encounters by patient identifier using chaining", async () => {
         const patientIdentifier = {
-            system: "http://example.com/mrn",
-            value: "MRN5678",
+            system: uniqueString("http://example.com/mrn"),
+            value: uniqueString("MRN5678"),
         };
 
         const patient = await createTestPatient(context, {
@@ -74,7 +77,7 @@ export function runIdentifiersAndReferencesTests(context: ITestContext) {
         const response = await fetchWrapper({
             authorized: true,
             relativeUrl:
-                `Encounter?subject:Patient.identifier=${patientIdentifier.system}|${patientIdentifier.value}`,
+                `Encounter?subject:Patient.identifier=${patientIdentifier.system}%7C${patientIdentifier.value}`,
         });
 
         assertEquals(
@@ -98,9 +101,10 @@ export function runIdentifiersAndReferencesTests(context: ITestContext) {
         );
     });
 
-    it("Should search for encounters by patient identifier using identifier modifier", async () => {
+    it("Should search for encounters by patient reference using patient's identifier", async () => {
+        const system = uniqueString("http://example.com/mrn");
         const patientIdentifier = {
-            system: "http://example.com/mrn",
+            system: system,
             value: "MRN9012",
         };
 
@@ -111,7 +115,6 @@ export function runIdentifiersAndReferencesTests(context: ITestContext) {
         await createTestEncounter(context, {
             subject: {
                 reference: `Patient/${patient.id}`,
-                identifier: patientIdentifier,
             },
             status: "finished",
             class: {
@@ -120,26 +123,55 @@ export function runIdentifiersAndReferencesTests(context: ITestContext) {
             },
         });
 
-        const response = await fetchWrapper({
+        // First, search for the patient using their identifier
+        const patientResponse = await fetchWrapper({
             authorized: true,
-            relativeUrl:
-                `Encounter?subject:identifier=${patientIdentifier.system}|${patientIdentifier.value}`,
+            relativeUrl: `Patient?identifier=${
+                encodeURIComponent(patientIdentifier.system)
+            }%7C${encodeURIComponent(patientIdentifier.value)}`,
         });
 
         assertEquals(
-            response.status,
+            patientResponse.status,
             200,
-            "Server should process identifier modifier search successfully",
+            "Server should process patient search by identifier successfully",
         );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
+        const patientBundle = patientResponse.jsonBody as Bundle;
+        assertExists(
+            patientBundle.entry,
+            "Patient bundle should contain entries",
+        );
         assertEquals(
-            bundle.entry.length,
+            patientBundle.entry.length,
             1,
-            "Should find 1 encounter for the patient with the specified identifier",
+            "Should find 1 patient with the specified identifier",
         );
 
-        const encounter = bundle.entry[0].resource as Encounter;
+        const foundPatient = patientBundle.entry[0].resource as Patient;
+
+        // Now, search for encounters using the found patient's id
+        const encounterResponse = await fetchWrapper({
+            authorized: true,
+            relativeUrl: `Encounter?patient=${foundPatient.id}`,
+        });
+
+        assertEquals(
+            encounterResponse.status,
+            200,
+            "Server should process encounter search by patient successfully",
+        );
+        const encounterBundle = encounterResponse.jsonBody as Bundle;
+        assertExists(
+            encounterBundle.entry,
+            "Encounter bundle should contain entries",
+        );
+        assertEquals(
+            encounterBundle.entry.length,
+            1,
+            "Should find 1 encounter for the patient",
+        );
+
+        const encounter = encounterBundle.entry[0].resource as Encounter;
         assertEquals(
             encounter.subject?.reference,
             `Patient/${patient.id}`,
@@ -158,7 +190,7 @@ export function runIdentifiersAndReferencesTests(context: ITestContext) {
         });
 
         for (const identifier of identifiers) {
-            const response = await fetchWrapper({
+            const response = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl:
                     `Patient?identifier=${identifier.system}|${identifier.value}`,

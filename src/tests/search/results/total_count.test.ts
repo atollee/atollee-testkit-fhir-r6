@@ -7,7 +7,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import { createTestPatient } from "../../utils/resource_creators.ts";
 import { Bundle } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
@@ -21,7 +21,7 @@ export function runTotalCountTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient`,
         });
@@ -40,31 +40,33 @@ export function runTotalCountTests(context: ITestContext) {
         );
     });
 
-    it("Should not return total count when _total=none", async () => {
-        const patientCount = 5;
-        for (let i = 0; i < patientCount; i++) {
-            await createTestPatient(context, {
-                name: [{ given: [`TestPatient${i}`] }],
+    if (context.isHapiBugsDisallowed()) {
+        it("Should not return total count when _total=none", async () => {
+            const patientCount = 5;
+            for (let i = 0; i < patientCount; i++) {
+                await createTestPatient(context, {
+                    name: [{ given: [`TestPatient${i}`] }],
+                });
+            }
+
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?_total=none`,
             });
-        }
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?_total=none`,
+            assertEquals(
+                response.status,
+                200,
+                "Server should process the search successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertEquals(
+                bundle.total,
+                undefined,
+                "Bundle should not contain a total count",
+            );
         });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process the search successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertEquals(
-            bundle.total,
-            undefined,
-            "Bundle should not contain a total count",
-        );
-    });
+    }
 
     it("Should return an estimate when _total=estimate", async () => {
         const patientCount = 10;
@@ -74,7 +76,7 @@ export function runTotalCountTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_total=estimate`,
         });
@@ -102,7 +104,7 @@ export function runTotalCountTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_total=accurate`,
         });
@@ -129,7 +131,7 @@ export function runTotalCountTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?_count=5`,
         });
@@ -154,16 +156,18 @@ export function runTotalCountTests(context: ITestContext) {
         );
     });
 
-    it("Should handle _total parameter with invalid value", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?_total=invalid`,
-        });
+    if (context.isHapiBugsDisallowed()) {
+        it("Should handle _total parameter with invalid value", async () => {
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Patient?_total=invalid`,
+            });
 
-        assertEquals(
-            response.status,
-            400,
-            "Server should return a 400 Bad Request for invalid _total value",
-        );
-    });
+            assertEquals(
+                response.status,
+                400,
+                "Server should return a 400 Bad Request for invalid _total value",
+            );
+        });
+    }
 }

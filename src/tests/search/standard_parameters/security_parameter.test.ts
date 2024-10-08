@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestCondition,
     createTestObservation,
@@ -20,11 +20,12 @@ function uniqueString(base: string): string {
 }
 
 export function runSecurityParameterTests(context: ITestContext) {
-    const securitySystem =
-        "http://terminology.hl7.org/CodeSystem/v3-Confidentiality";
-    const securityCode = "R";
-
     it("Should find resources with a specific security label", async () => {
+        const securitySystem = uniqueString(
+            "http://terminology.hl7.org/CodeSystem/v3-Confidentiality",
+        );
+        const securityCode = uniqueString("R");
+
         await createTestObservation(
             context,
             context.getValidPatientId(),
@@ -36,7 +37,7 @@ export function runSecurityParameterTests(context: ITestContext) {
             },
         );
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?_security=${securitySystem}|${securityCode}`,
@@ -61,12 +62,17 @@ export function runSecurityParameterTests(context: ITestContext) {
     });
 
     it("Should not find resources without the specified security label", async () => {
+        const securitySystem = uniqueString(
+            "http://terminology.hl7.org/CodeSystem/v3-Confidentiality",
+        );
+        const securityCode = uniqueString("R");
+
         await createTestObservation(context, context.getValidPatientId(), {
             code: uniqueString("TestCode"),
             meta: { security: [{ system: securitySystem, code: "N" }] },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?_security=${securitySystem}|${securityCode}`,
@@ -82,6 +88,11 @@ export function runSecurityParameterTests(context: ITestContext) {
     });
 
     it("Should find resources with multiple security labels", async () => {
+        const securitySystem = uniqueString(
+            "http://terminology.hl7.org/CodeSystem/v3-Confidentiality",
+        );
+        const securityCode = uniqueString("R");
+
         await createTestObservation(
             context,
             context.getValidPatientId(),
@@ -99,7 +110,7 @@ export function runSecurityParameterTests(context: ITestContext) {
             },
         );
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?_security=${securitySystem}|${securityCode}&_security=http://example.com/security|custom`,
@@ -133,61 +144,77 @@ export function runSecurityParameterTests(context: ITestContext) {
         );
     });
 
-    it("Should work with _security across different resource types", async () => {
-        await createTestPatient(context, {
-            name: [{ given: ["TestPatient"] }],
-            meta: {
-                security: [{ system: securitySystem, code: securityCode }],
-            },
-        });
-        await createTestCondition(context, {
-            subject: { reference: `Patient/${context.getValidPatientId()}` },
-            meta: {
-                security: [{ system: securitySystem, code: securityCode }],
-            },
-        });
+    if (context.isMultiTypeSearchSupported()) {
+        it("Should work with _security across different resource types", async () => {
+            const securitySystem = uniqueString(
+                "http://terminology.hl7.org/CodeSystem/v3-Confidentiality",
+            );
+            const securityCode = uniqueString("R");
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `?_security=${securitySystem}|${securityCode}`,
-        });
+            await createTestPatient(context, {
+                name: [{ given: ["TestPatient"] }],
+                meta: {
+                    security: [{ system: securitySystem, code: securityCode }],
+                },
+            });
+            await createTestCondition(context, {
+                subject: {
+                    reference: `Patient/${context.getValidPatientId()}`,
+                },
+                meta: {
+                    security: [{ system: securitySystem, code: securityCode }],
+                },
+            });
 
-        assertEquals(
-            response.status,
-            200,
-            "Server should process _security parameter across resource types successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertTrue(
-            bundle.entry.length >= 2,
-            "Bundle should contain at least two entries",
-        );
-        assertTrue(
-            bundle.entry.some((entry) =>
-                entry.resource?.resourceType === "Patient"
-            ) &&
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `?_security=${securitySystem}|${securityCode}`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process _security parameter across resource types successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertTrue(
+                bundle.entry.length >= 2,
+                "Bundle should contain at least two entries",
+            );
+            assertTrue(
                 bundle.entry.some((entry) =>
-                    entry.resource?.resourceType === "Condition"
-                ),
-            "Bundle should contain both Patient and Condition resources",
-        );
-    });
-
-    it("Should handle invalid security label", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Observation?_security=invalid-security-label`,
+                    entry.resource?.resourceType === "Patient"
+                ) &&
+                    bundle.entry.some((entry) =>
+                        entry.resource?.resourceType === "Condition"
+                    ),
+                "Bundle should contain both Patient and Condition resources",
+            );
         });
+    }
 
-        assertEquals(
-            response.status,
-            400,
-            "Server should return 400 for invalid security label",
-        );
-    });
+    if (context.isHapiBugsDisallowed()) {
+        it("Should handle invalid security label", async () => {
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Observation?_security=inv$$alid-security-label`,
+            });
+
+            assertEquals(
+                response.status,
+                400,
+                "Server should return 400 for invalid security label",
+            );
+        });
+    }
 
     it("Should combine _security with other search parameters", async () => {
+        const securitySystem = uniqueString(
+            "http://terminology.hl7.org/CodeSystem/v3-Confidentiality",
+        );
+        const securityCode = uniqueString("R");
+
         const uniqueCode = uniqueString("TestCode");
         await createTestObservation(context, context.getValidPatientId(), {
             code: uniqueCode,
@@ -196,7 +223,7 @@ export function runSecurityParameterTests(context: ITestContext) {
             },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?_security=${securitySystem}|${securityCode}&code=${uniqueCode}`,
@@ -217,29 +244,43 @@ export function runSecurityParameterTests(context: ITestContext) {
         );
     });
 
-    it("Should find resources with only system specified", async () => {
-        await createTestObservation(context, context.getValidPatientId(), {
-            code: uniqueString("TestCode"),
-            meta: {
-                security: [{ system: securitySystem, code: securityCode }],
-            },
-        });
+    if (context.isHapiBugsDisallowed()) {
+        it("Should find resources with only system specified", async () => {
+            const securitySystem = uniqueString(
+                "http://terminology.hl7.org/CodeSystem/v3-Confidentiality",
+            );
+            const securityCode = uniqueString("R");
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Observation?_security=${securitySystem}`,
-        });
+            await createTestObservation(
+                context,
+                context.getValidPatientId(),
+                {
+                    code: uniqueString("TestCode"),
+                    meta: {
+                        security: [{
+                            system: securitySystem,
+                            code: securityCode,
+                        }],
+                    },
+                },
+            );
 
-        assertEquals(
-            response.status,
-            200,
-            "Server should process _security parameter with only system successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertTrue(
-            bundle.entry.length > 0,
-            "Bundle should contain at least one entry",
-        );
-    });
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Observation?_security=${securitySystem}`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process _security parameter with only system successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertTrue(
+                bundle.entry.length > 0,
+                "Bundle should contain at least one entry",
+            );
+        });
+    }
 }

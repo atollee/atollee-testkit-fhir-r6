@@ -2,6 +2,7 @@ import { StructureDefinition } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
 import { StructureDefinitionOptions } from "./types.ts";
+import { createIdentifierOptions } from "./utils.ts";
 
 export async function createTestStructureDefinition(
     _context: ITestContext,
@@ -18,6 +19,7 @@ export async function createTestStructureDefinition(
         type: options.type,
         baseDefinition: options.baseDefinition,
         derivation: "constraint",
+        identifier: createIdentifierOptions(options.identifier),
     };
 
     if (options.versionScheme) {

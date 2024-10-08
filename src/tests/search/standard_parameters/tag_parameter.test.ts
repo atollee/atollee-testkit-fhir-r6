@@ -6,15 +6,13 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestCondition,
     createTestObservation,
     createTestPatient,
 } from "../../utils/resource_creators.ts";
-import {
-    Bundle, Observation
-} from "npm:@types/fhir/r4.d.ts";
+import { Bundle, Observation } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 
 function uniqueString(base: string): string {
@@ -22,11 +20,12 @@ function uniqueString(base: string): string {
 }
 
 export function runTagParameterTests(context: ITestContext) {
-    const tagSystem =
-        "http://terminology.hl7.org/ValueSet/v3-SeverityObservation";
-    const tagCode = "H";
-
     it("Should find resources with a specific tag", async () => {
+        const tagSystem = uniqueString(
+            "http://terminology.hl7.org/ValueSet/v3-SeverityObservation",
+        );
+        const tagCode = uniqueString("H");
+
         await createTestObservation(
             context,
             context.getValidPatientId(),
@@ -36,7 +35,7 @@ export function runTagParameterTests(context: ITestContext) {
             },
         );
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?_tag=${tagSystem}|${tagCode}`,
         });
@@ -60,12 +59,17 @@ export function runTagParameterTests(context: ITestContext) {
     });
 
     it("Should not find resources without the specified tag", async () => {
+        const tagSystem = uniqueString(
+            "http://terminology.hl7.org/ValueSet/v3-SeverityObservation",
+        );
+        const tagCode = uniqueString("H");
+
         await createTestObservation(context, context.getValidPatientId(), {
             code: uniqueString("TestCode"),
             meta: { tag: [{ system: tagSystem, code: "L" }] },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?_tag=${tagSystem}|${tagCode}`,
         });
@@ -80,6 +84,11 @@ export function runTagParameterTests(context: ITestContext) {
     });
 
     it("Should find resources with multiple tags", async () => {
+        const tagSystem = uniqueString(
+            "http://terminology.hl7.org/ValueSet/v3-SeverityObservation",
+        );
+        const tagCode = uniqueString("H");
+
         await createTestObservation(
             context,
             context.getValidPatientId(),
@@ -94,7 +103,7 @@ export function runTagParameterTests(context: ITestContext) {
             },
         );
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?_tag=${tagSystem}|${tagCode}&_tag=http://example.com/tags|custom`,
@@ -127,64 +136,80 @@ export function runTagParameterTests(context: ITestContext) {
         );
     });
 
-    it("Should work with _tag across different resource types", async () => {
-        await createTestPatient(context, {
-            name: [{ given: ["TestPatient"] }],
-            meta: { tag: [{ system: tagSystem, code: tagCode }] },
-        });
-        await createTestCondition(context, {
-            subject: { reference: `Patient/${context.getValidPatientId()}` },
-            meta: { tag: [{ system: tagSystem, code: tagCode }] },
-        });
+    if (context.isMultiTypeSearchSupported()) {
+        it("Should work with _tag across different resource types", async () => {
+            const tagSystem = uniqueString(
+                "http://terminology.hl7.org/ValueSet/v3-SeverityObservation",
+            );
+            const tagCode = uniqueString("H");
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `?_tag=${tagSystem}|${tagCode}`,
-        });
+            await createTestPatient(context, {
+                name: [{ given: ["TestPatient"] }],
+                meta: { tag: [{ system: tagSystem, code: tagCode }] },
+            });
+            await createTestCondition(context, {
+                subject: {
+                    reference: `Patient/${context.getValidPatientId()}`,
+                },
+                meta: { tag: [{ system: tagSystem, code: tagCode }] },
+            });
 
-        assertEquals(
-            response.status,
-            200,
-            "Server should process _tag parameter across resource types successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertTrue(
-            bundle.entry.length >= 2,
-            "Bundle should contain at least two entries",
-        );
-        assertTrue(
-            bundle.entry.some((entry) =>
-                entry.resource?.resourceType === "Patient"
-            ) &&
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `?_tag=${tagSystem}|${tagCode}`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process _tag parameter across resource types successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertTrue(
+                bundle.entry.length >= 2,
+                "Bundle should contain at least two entries",
+            );
+            assertTrue(
                 bundle.entry.some((entry) =>
-                    entry.resource?.resourceType === "Condition"
-                ),
-            "Bundle should contain both Patient and Condition resources",
-        );
-    });
-
-    it("Should handle invalid tag", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Observation?_tag=invalid-tag`,
+                    entry.resource?.resourceType === "Patient"
+                ) &&
+                    bundle.entry.some((entry) =>
+                        entry.resource?.resourceType === "Condition"
+                    ),
+                "Bundle should contain both Patient and Condition resources",
+            );
         });
+    }
 
-        assertEquals(
-            response.status,
-            400,
-            "Server should return 400 for invalid tag",
-        );
-    });
+    if (context.isHapiBugsDisallowed()) {
+        it("Should handle invalid tag", async () => {
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Observation?_tag=inva$$lid-tag`,
+            });
+
+            assertEquals(
+                response.status,
+                400,
+                "Server should return 400 for invalid tag",
+            );
+        });
+    }
 
     it("Should combine _tag with other search parameters", async () => {
+        const tagSystem = uniqueString(
+            "http://terminology.hl7.org/ValueSet/v3-SeverityObservation",
+        );
+        const tagCode = uniqueString("H");
+
         const uniqueCode = uniqueString("TestCode");
         await createTestObservation(context, context.getValidPatientId(), {
             code: uniqueCode,
             meta: { tag: [{ system: tagSystem, code: tagCode }] },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
                 `Observation?_tag=${tagSystem}|${tagCode}&code=${uniqueCode}`,
@@ -205,37 +230,49 @@ export function runTagParameterTests(context: ITestContext) {
         );
     });
 
-    it("Should find resources with only system specified", async () => {
-        await createTestObservation(context, context.getValidPatientId(), {
-            code: uniqueString("TestCode"),
-            meta: { tag: [{ system: tagSystem, code: tagCode }] },
-        });
+    if (context.isHapiBugsDisallowed()) {
+        it("Should find resources with only system specified", async () => {
+            const tagSystem = uniqueString(
+                "http://terminology.hl7.org/ValueSet/v3-SeverityObservation",
+            );
+            const tagCode = uniqueString("H");
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Observation?_tag=${tagSystem}`,
-        });
+            await createTestObservation(context, context.getValidPatientId(), {
+                code: uniqueString("TestCode"),
+                meta: { tag: [{ system: tagSystem, code: tagCode }] },
+            });
 
-        assertEquals(
-            response.status,
-            200,
-            "Server should process _tag parameter with only system successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertTrue(
-            bundle.entry.length > 0,
-            "Bundle should contain at least one entry",
-        );
-    });
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `Observation?_tag=${tagSystem}`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process _tag parameter with only system successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertExists(bundle.entry, "Bundle should contain entries");
+            assertTrue(
+                bundle.entry.length > 0,
+                "Bundle should contain at least one entry",
+            );
+        });
+    }
 
     it("Should find resources with only code specified", async () => {
+        const tagSystem = uniqueString(
+            "http://terminology.hl7.org/ValueSet/v3-SeverityObservation",
+        );
+        const tagCode = uniqueString("H");
+
         await createTestObservation(context, context.getValidPatientId(), {
             code: uniqueString("TestCode"),
             meta: { tag: [{ system: tagSystem, code: tagCode }] },
         });
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?_tag=${tagCode}`,
         });

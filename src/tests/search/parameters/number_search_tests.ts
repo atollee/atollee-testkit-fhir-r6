@@ -1,7 +1,7 @@
 // tests/search/parameters/number_search_tests.ts
 
 import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestImmunizationRecommendation,
     createTestObservation,
@@ -36,7 +36,7 @@ export function runNumberSearchTests(context: ITestContext) {
         ];
 
         for (const test of precisionTests) {
-            const response = await fetchWrapper({
+            const response = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl: `Observation?value-quantity=${test.search}`,
             });
@@ -81,7 +81,7 @@ export function runNumberSearchTests(context: ITestContext) {
         ];
 
         for (const test of prefixTests) {
-            const response = await fetchWrapper({
+            const response = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl: `Observation?value-quantity=${test.prefix}100`,
             });
@@ -124,7 +124,7 @@ export function runNumberSearchTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `ImmunizationRecommendation?dose-number=2`,
         });
@@ -162,7 +162,7 @@ export function runNumberSearchTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `RiskAssessment?probability=gt0.8`,
         });
@@ -204,7 +204,7 @@ export function runNumberSearchTests(context: ITestContext) {
             });
         }
 
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Observation?value-quantity=gt8e-2`,
         });

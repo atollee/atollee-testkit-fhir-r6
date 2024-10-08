@@ -7,8 +7,10 @@ import {
 } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { createIdentifierOptions } from "./utils.ts";
+import { IIdentifierOptions } from "./types.ts";
 
-export interface CareTeamOptions {
+export interface CareTeamOptions extends IIdentifierOptions {
     status?: CareTeam["status"];
     name?: string;
     subject?: Reference;
@@ -25,6 +27,7 @@ export async function createTestCareTeam(
         name: options.name || `Test CareTeam ${Date.now()}`,
         subject: options.subject ||
             { reference: `Patient/${context.getValidPatientId()}` },
+        identifier: createIdentifierOptions(options.identifier),
     };
 
     if (options.participant) {

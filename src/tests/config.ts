@@ -1,8 +1,13 @@
 import { Config } from "./types.ts";
 
+/*
 const debug = true;
 const ory = false;
 const hapi = false;
+*/
+const debug = false;
+const ory = false;
+const hapi = true;
 
 const debugConfig: Config = {
     clientId: "SAMPLE_CONFIDENTIAL_CLIENT_ID",
@@ -27,8 +32,8 @@ const debugConfig: Config = {
 };
 
 const prodConfig: Config = {
-    clientId: "schule-demo",
-    clientSecret: "EuRA4qO816OPwbjUDLk7gwL7yBLwyUFc",
+    clientId: "homepage-client",
+    clientSecret: "AMwVlN6ZPP9NcMgiqfr9307A0KQuq97N",
     scope: "patient/*.read patient/*.write launch/patient",
     redirectUri: "http://localhost:3000/callback",
     authServerUrl: "https://test.atollee.com",
@@ -44,8 +49,8 @@ const prodConfig: Config = {
     httpSupported: false,
     defaultPageSize: 20,
     paginationSupported: true,
-    userName: "admin",
-    password: "password",
+    userName: "test1",
+    password: "testi",
 };
 
 const oryConfig: Config = {
@@ -75,8 +80,8 @@ const hapiConfig: Config = {
     clientSecret: "UwAy8gFmrbn~-bWiL9A86g-sHr",
     scope: "patient/*.read patient/*.write launch/patient",
     redirectUri: "http://localhost:3000/callback",
-    authServerUrl: "http://localhost:8080/fhir",
-    fhirServerUrl: "http://localhost:8080/fhir",
+    authServerUrl: "http://localhost:6066/fhir",
+    fhirServerUrl: "http://localhost:6066/fhir",
     validPatientId: "355A",
     writableValidPatientId: "85A",
     xmlSupported: true,
@@ -90,7 +95,54 @@ const hapiConfig: Config = {
     paginationSupported: true,
     userName: "admin",
     password: "password",
+    bundleTotalMandatory: false,
+    textContentSearchSupported: false,
+    multiTypeSupported: false,
+    lenientSearchHandlingSupported: false,
+    emptyParametersAllowed: false,
+    paginationFirstRelationLinkSupported: false,
+    paginationNextRelationLinkSupported: false,
+    enforceDisallowingMultipleModifiers: false,
+    locationAboveModifierSupported: false,
+    canonicalUrlAboveModifierSupported: false,
+    semverVersionComparisonSupported: false,
+    hapiBugsDisallowed: false,
+    aboveModifierOnSnomedCodeSystemsSupported: false,
+    locationBelowModifierSupported: false,
+    belowModifierOnSnomedCodeSystemsSupported: false,
+    canonicalUrlBelowModifierSupported: false,
+    belowModifierOnMimeTypesSupported: false,
+    identifierCanonicalSearchSupported: false,
+    identifierReferenceSearchSupported: false,
+    notInModifierSnomedSystemSupported: false,
+    ofTypeModifierSupported: false,
+    fullTextSearchSupported: false,
+    externalReferencesAllowed: false,
+    showFetchResponses: false,
+    approximateSearchSupported: false,
+    locationContainsParameterSupported: false,
+    locationNearParameterSupported: false,
+    compositionSectionTextParameterSupported: false,
+    rejectSearchWithAmbiguousResourceTypesSupported: false,
+    hasForChainedSearchesSupported: false,
+    recordFetchFailures: false,
+    filterContainsOperatorSupported: false,
+    multipleResourceTypeSearchSupported: false,
+    implicitCodeSystemSearchSupported: false,
+    expandOperationSupported: false,
+    summarySearchParameterSupported: false,
+    elementSearchParameterSupported: false,
+    maxResultsSearchParameterSupported: false,
+    relevantSortSupported: false,
+    graphSearchParameterSupported: false,
+    containedSearchesSupported: false,
+    languageSearchParameterSupported: false,
+    querySearchParameterSupported: false,
+    sourceSearchParameterSupported: false,
+    namedListSearchParameterSupported: false,
+    ignoringUnknownParameters: false,
 };
+
 export const CONFIG = hapi
     ? hapiConfig
     : (debug ? debugConfig : (ory ? oryConfig : prodConfig));

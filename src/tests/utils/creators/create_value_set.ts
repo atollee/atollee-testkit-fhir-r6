@@ -3,8 +3,11 @@
 import { ValueSet } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { createIdentifierOptions } from "./utils.ts";
+import { IIdentifierOptions } from "./types.ts";
+import { assertTrue } from "../../../../deps.test.ts";
 
-export interface ValueSetOptions {
+export interface ValueSetOptions extends IIdentifierOptions {
     id?: string; // Add this line
     url: string;
     name?: string;
@@ -31,6 +34,7 @@ export async function createTestValueSet(
         name: options.name || `TestValueSet-${Date.now()}`,
         status: options.status || "active",
         compose: options.compose,
+        identifier: createIdentifierOptions(options.identifier),
     };
 
     const response = await fetchWrapper({
@@ -40,5 +44,9 @@ export async function createTestValueSet(
         body: JSON.stringify(newValueSet),
     });
 
+    if (!response.success) {
+        console.log(JSON.stringify(response, null, 2));
+    }
+    assertTrue(response.success, "creation of value set was successful");
     return response.jsonBody as ValueSet;
 }
