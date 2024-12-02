@@ -6,7 +6,11 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
+import {
+    fetchSearchWrapper,
+    fetchWrapper,
+    patchUrl,
+} from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -157,7 +161,7 @@ export function runMaxResultsTests(context: ITestContext) {
 
                 const secondResponse = await fetchSearchWrapper({
                     authorized: true,
-                    relativeUrl: nextLink.url,
+                    relativeUrl: patchUrl(context, nextLink.url),
                 });
 
                 assertEquals(
@@ -178,9 +182,12 @@ export function runMaxResultsTests(context: ITestContext) {
 
                 const thirdResponse = await fetchSearchWrapper({
                     authorized: true,
-                    relativeUrl: secondBundle.link!.find((link) =>
-                        link.relation === "next"
-                    )!.url,
+                    relativeUrl: patchUrl(
+                        context,
+                        secondBundle.link!.find((link) =>
+                            link.relation === "next"
+                        )!.url,
+                    ),
                 });
 
                 assertEquals(
@@ -189,9 +196,9 @@ export function runMaxResultsTests(context: ITestContext) {
                     "Server should process the third search successfully",
                 );
                 const thirdBundle = thirdResponse.jsonBody as Bundle;
-                assertEquals(
-                    thirdBundle.entry,
-                    undefined,
+                assertTrue(
+                    thirdBundle.entry === undefined ||
+                        thirdBundle.entry.length === 0,
                     "Third bundle should not contain any entries due to _maxresults limit",
                 );
             });

@@ -21,36 +21,85 @@ export function runErrorHandlingBaseTests(context: ITestContext) {
             `Server should return 4xx or 5xx status code for invalid resource type (got ${response.status})`,
         );
     });
-
-    it("Server should return an OperationOutcome with error details when search fails", async () => {
+    it("Server should ignore unknown parameters in lenient mode (default)", async () => {
+        createTestPatient(context, {});
         const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?invalid_parameter=value`,
         });
 
-        assertTrue(
-            response.status >= 400 && response.status < 600,
-            `Server should return 4xx or 5xx status code for invalid parameter (got ${response.status})`,
+        assertEquals(
+            response.status,
+            200,
+            "Server should return 200 OK in lenient mode with unknown parameters",
         );
 
-        if (
-            response.jsonBody &&
-            (response.jsonBody as OperationOutcome).resourceType ===
-                "OperationOutcome"
-        ) {
+        assertTrue(
+            response.jsonBody?.resourceType === "Bundle",
+            "Server should return a Bundle in lenient mode",
+        );
+    });
+
+    it("Server should return an error in strict mode for unknown parameters", async () => {
+        const response = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl: `Patient?invalid_parameter=value`,
+            headers: {
+                "Prefer": "handling=strict",
+            },
+        });
+
+        assertTrue(
+            response.status >= 400 && response.status < 600,
+            `Server should return 4xx or 5xx status code for invalid parameter in strict mode (got ${response.status})`,
+        );
+
+        if (response.jsonBody?.resourceType === "OperationOutcome") {
             const operationOutcome = response.jsonBody as OperationOutcome;
             assertTrue(
                 operationOutcome.issue.some((issue) =>
-                    issue.severity === "error"
+                    issue.severity === "error" &&
+                    issue.diagnostics?.includes("invalid")
                 ),
                 "OperationOutcome should contain at least one error issue",
             );
         } else {
             assertTrue(
                 false,
-                "Server should return an OperationOutcome for failed searches",
+                "Server should return an OperationOutcome for failed searches in strict mode",
             );
         }
+    });
+
+    it("Server should include only processed parameters in self link", async () => {
+        const response = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl: `Patient?name=Smith&invalid_parameter=value`,
+        });
+
+        assertEquals(
+            response.status,
+            200,
+            "Server should return 200 OK",
+        );
+
+        const bundle = response.jsonBody as Bundle;
+        const selfLink = bundle.link?.find((link) => link.relation === "self");
+
+        assertTrue(
+            selfLink !== undefined,
+            "Bundle should contain a self link",
+        );
+
+        assertTrue(
+            !selfLink.url.includes("invalid_parameter"),
+            "Self link should not include ignored parameters",
+        );
+
+        assertTrue(
+            selfLink.url.includes("name=Smith"),
+            "Self link should include valid parameters",
+        );
     });
 
     it("Empty search result should not be treated as an error", async () => {
@@ -67,7 +116,11 @@ export function runErrorHandlingBaseTests(context: ITestContext) {
 
         const bundle = response.jsonBody as Bundle;
         assertEquals(bundle.total, 0, "Bundle should have zero total results");
-        assertEquals(bundle.entry?.length ?? 0, 0, "Bundle should have no entries");
+        assertEquals(
+            bundle.entry?.length ?? 0,
+            0,
+            "Bundle should have no entries",
+        );
     });
 
     it("Server should process search with unknown subject", async () => {
@@ -118,24 +171,24 @@ export function runErrorHandlingBaseTests(context: ITestContext) {
         it("Server should ignore empty parameters", async () => {
             const emptyFamilyName = uniqueString("EmptyParamTest");
             await createTestPatient(context, { family: emptyFamilyName });
-    
+
             const response = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl: `Patient?family=${emptyFamilyName}&empty_param=`,
             });
-    
+
             assertEquals(
                 response.status,
                 200,
                 "Server should return 200 OK when ignoring empty parameters",
             );
-    
+
             const bundle = response.jsonBody as Bundle;
             assertTrue(
                 bundle.total! > 0,
                 "Bundle should have results despite empty parameter",
             );
-        });            
+        });
     }
 
     it("Server should honor 'strict' handling preference", async () => {

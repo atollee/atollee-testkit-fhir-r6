@@ -1,11 +1,12 @@
 // tests/search/parameters/search_parameter_types.test.ts
 
 import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { fetchSearchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
     createTestStructureDefinition,
+    uniqueNumber,
     uniqueString,
 } from "../../utils/resource_creators.ts";
 import {
@@ -134,15 +135,17 @@ export function runSearchParameterTypeTests(context: ITestContext) {
 
     it("Should support composite search parameter", async () => {
         const patient = await createTestPatient(context, {});
+        const code = uniqueString("8480-6");
+        const value = uniqueNumber();
         await createTestObservation(context, patient.id!, {
-            code: "8480-6",
-            value: 120,
+            code: code,
+            value: value,
         });
 
-        const response = await fetchSearchWrapper({
+        const response = await fetchWrapper({
             authorized: true,
             relativeUrl:
-                `Observation?code-value-quantity=http://loinc.org|8480-6$120`,
+                `Observation?code-value-quantity=http://loinc.org|${code}$${value}`,
         });
 
         assertEquals(
@@ -175,7 +178,7 @@ export function runSearchParameterTypeTests(context: ITestContext) {
         const exactResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
-                `Observation?code=8480-6&value-quantity=120||mm[Hg]|http://unitsofmeasure.org`,
+                `Observation?code=8480-6&value-quantity=120|http://unitsofmeasure.org|mm[Hg]`,
         });
 
         assertEquals(
@@ -224,12 +227,12 @@ export function runSearchParameterTypeTests(context: ITestContext) {
 
     it("Should support uri search parameter", async () => {
         // Create unique URLs for our test StructureDefinitions
-        const targetUrl = `http://example.com/fhir/StructureDefinition/${
-            uniqueString("Patient")
-        }`;
-        const otherUrl = `http://example.com/fhir/StructureDefinition/${
-            uniqueString("Observation")
-        }`;
+        const targetUrl = `http://example.com/${
+            uniqueString("fhir")
+        }/StructureDefinition/Patient`;
+        const otherUrl = `http://example.com/${
+            uniqueString("fhir")
+        }/fhir/StructureDefinition/Observation`;
 
         // Create a StructureDefinition with the target URL
         const targetStructureDefinition = await createTestStructureDefinition(
@@ -321,7 +324,6 @@ export function runSearchParameterTypeTests(context: ITestContext) {
     });
 
     // Additional tests for modifiers and prefixes
-
     it("Should support search parameter modifiers", async () => {
         const familyName = "ModifierTest";
         await createTestPatient(context, { family: familyName });

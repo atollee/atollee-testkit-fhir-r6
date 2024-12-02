@@ -3,7 +3,6 @@
 import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
 import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
-    createTestIdentifierString,
     createTestObservation,
     createTestPatient,
     createTestValueSet,
@@ -150,16 +149,22 @@ export function runEscapingSearchParametersTests(context: ITestContext) {
     it("Should handle mix of escaped and unescaped delimiters", async () => {
         const url1 = uniqueString("http://acme.org/fhir/ValueSet/123");
         const url2 = uniqueString(
-            "http://acme.org/fhir/ValueSet/124,ValueSet/125",
+            "http://acme.org/fhir/ValueSet/124,ValueSet/125", // Regular URI - no escape needed
         );
 
+        // Create ValueSets with unescaped URIs
         await createTestValueSet(context, { url: url1 });
         await createTestValueSet(context, { url: url2 });
+
+        // When searching:
+        // 1. Escape the comma in url2 for search syntax
+        // 2. Encode both URIs
+        const searchUrl2 = url2.replace(/,/g, "\\,");
 
         const response = await fetchWrapper({
             authorized: true,
             relativeUrl: `ValueSet?url=${encodeURIComponent(url1)},${
-                encodeURIComponent(url2)
+                encodeURIComponent(searchUrl2)
             }`,
         });
 
@@ -180,7 +185,7 @@ export function runEscapingSearchParametersTests(context: ITestContext) {
     it("Should handle percent-encoded URLs", async () => {
         const url1 = uniqueString("http://acme.org/fhir/ValueSet/123");
         const url2 = uniqueString("http://acme.org/fhir/ValueSet/124");
-        const url3 = uniqueString("ValueSet/125");
+        const url3 = uniqueString("http://acme.org/fhir/ValueSet/125");
 
         await createTestValueSet(context, { url: url1 });
         await createTestValueSet(context, { url: url2 });
@@ -219,7 +224,7 @@ export function runEscapingSearchParametersTests(context: ITestContext) {
         const response = await fetchWrapper({
             authorized: true,
             relativeUrl: `ValueSet?url=${encodeURIComponent(url1)}%2C${
-                encodeURIComponent(url2)
+                encodeURIComponent(url2.replace(",", "\\,"))
             }`,
         });
 

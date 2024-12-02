@@ -1,6 +1,13 @@
 import type { Resource } from "npm:@types/fhir/r4.d.ts";
 
 export interface Config {
+    traceFetchCalls: boolean;
+    debugFetchCalls: boolean;
+    searchParameterCaseInsensitiveSupported?: boolean;
+    identifierModifierSupported?: boolean;
+    absoluteUrlReferencesSupported?: boolean;
+    approximitySearchRange?: number;
+    serverTimeZone: string;
     ignoringUnknownParameters?: boolean;
     namedListSearchParameterSupported?: boolean;
     sourceSearchParameterSupported?: boolean;
@@ -67,6 +74,7 @@ export interface Config {
     recordFetchFailures?: boolean;
     preferHeaderReturned?: boolean;
     bundleTotalMandatory?: boolean;
+    transactionSupported: boolean;
 }
 
 export interface IFetchOptions extends RequestInit {
@@ -87,6 +95,12 @@ export interface IFetchResponse {
 }
 
 export interface ITestContext {
+    createRelativeUrl(url: string): string;
+    isSearchParameterCaseInsensitiveSupported(): boolean;
+    isIdentifierModifierSupported(): boolean;
+    isAbsoluteUrlReferencesSupported(): boolean;
+    getApproximitySearchRange(): number;
+    getServerTimezone(): string;
     isIgnoringUnknownParameters(): boolean;
     isNamedListSearchParameterSupported(): boolean;
     isSourceSearchParameterSupported(): unknown;
@@ -145,4 +159,5 @@ export interface ITestContext {
     isTextContentSearchSupported(): boolean;
     isBundleTotalMandatory(): unknown;
     isPreferHeaderReturned(): boolean;
+    areTransactionSupported(): boolean;
 }

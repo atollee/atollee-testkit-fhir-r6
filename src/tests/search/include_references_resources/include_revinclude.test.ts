@@ -66,7 +66,7 @@ export function runIncludeRevincludeTests(context: ITestContext) {
             code: "test-code",
         });
 
-        const response = await fetchSearchWrapper({
+        const response = await fetchWrapper({
             authorized: true,
             relativeUrl:
                 `Patient?_id=${patient.id}&_revinclude=Observation:subject`,
@@ -99,7 +99,7 @@ export function runIncludeRevincludeTests(context: ITestContext) {
         );
     });
 
-    it("Should support wildcard _include", async () => {
+    it("Should support wildcard _revinclude", async () => {
         const patient = await createTestPatient(context, {
             name: [{ given: ["TestPatient"] }],
         });

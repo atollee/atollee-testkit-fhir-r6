@@ -79,7 +79,7 @@ export function runSearchTestBasicsTests(context: ITestContext) {
             "Returned observation should have the correct code",
         );
     });
-
+ 
     if (context.isHapiBugsDisallowed()) {
         it("Should perform number search with modifier", async () => {
             const patient = await createTestPatient(context, {});
@@ -87,12 +87,23 @@ export function runSearchTestBasicsTests(context: ITestContext) {
             await createTestObservation(context, patient.id!, {
                 code: "8480-6",
                 value: systolicBP,
+                valueString: "testme", // forces no valueQuantity
             });
-
+            await createTestObservation(
+                context,
+                patient.id!,
+                {
+                    code: "8480-6",
+                    valueQuantity: {
+                        value: systolicBP,
+                        unit: "mmHg",
+                    },
+                },
+            );
             const response = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl:
-                    `Observation?code=8480-6&value-quantity:not=${systolicBP}`,
+                    `Observation?code=8480-6&value-quantity:missing=true`,
             });
 
             assertEquals(
@@ -104,13 +115,13 @@ export function runSearchTestBasicsTests(context: ITestContext) {
             assertExists(bundle.entry, "Bundle should contain entries");
             assertEquals(
                 bundle.entry?.length ?? 0,
-                0,
+                1,
                 "Bundle should not contain any matching Observations",
             );
             if (context.isBundleTotalMandatory()) {
                 assertEquals(
                     bundle.total,
-                    0,
+                    1,
                     "Bundle should not contain any matching Observations",
                 );
             }

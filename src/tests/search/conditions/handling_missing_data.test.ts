@@ -31,17 +31,23 @@ export function runHandlingMissingDataTests(context: ITestContext) {
             },
         );
 
-        await createTestAllergyIntolerance(context, patient.id!, {
-            clinicalStatus: {
-                coding: [{
-                    system:
-                        "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-                    code: "inactive",
-                }],
+        await createTestAllergyIntolerance(
+            context,
+            patient.id!,
+            {
+                clinicalStatus: {
+                    coding: [{
+                        system:
+                            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                        code: "inactive",
+                    }],
+                },
             },
-        });
+        );
 
-        await createTestAllergyIntolerance(context, patient.id!, {}); // No clinical status
+        await createTestAllergyIntolerance(context, patient.id!, {
+            noClinicalStatus: true, // No clinical status
+        });
 
         const response = await fetchSearchWrapper({
             authorized: true,
@@ -73,7 +79,9 @@ export function runHandlingMissingDataTests(context: ITestContext) {
         const allergyWithoutStatus = await createTestAllergyIntolerance(
             context,
             patient.id!,
-            {},
+            {
+                noClinicalStatus: true
+            },
         );
 
         await createTestAllergyIntolerance(context, patient.id!, {

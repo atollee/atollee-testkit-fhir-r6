@@ -12,7 +12,7 @@ import {
     createTestObservation,
     createTestPatient,
 } from "../../../utils/resource_creators.ts";
-import { Bundle, Observation } from "npm:@types/fhir/r4.d.ts";
+import { Bundle, Observation, OperationOutcome } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../../types.ts";
 
 const SNOMED_SYSTEM = "http://snomed.info/sct";
@@ -114,7 +114,7 @@ export function runBelowModifierTokenTests(context: ITestContext) {
             );
         });
 
-        it("Should handle token search with only system", async () => {
+        it("Should reject hierarchical token search with only system", async () => {
             const patient = await createTestPatient(context, {});
 
             await createTestObservation(context, patient.id!, {
@@ -130,14 +130,18 @@ export function runBelowModifierTokenTests(context: ITestContext) {
 
             assertEquals(
                 response.status,
-                200,
-                "Server should process search with below modifier on token with only system",
+                400,
+                "Server should reject hierarchical search with only system",
             );
-            const bundle = response.jsonBody as Bundle;
-            assertExists(bundle.entry, "Bundle should contain entries");
+
+            const operationOutcome = response.jsonBody as OperationOutcome;
+            assertExists(
+                operationOutcome.issue?.[0]?.diagnostics,
+                "OperationOutcome should explain the error",
+            );
             assertTrue(
-                bundle.entry.length > 0,
-                "Bundle should contain at least one matching Observation",
+                operationOutcome.issue[0].diagnostics.includes("code"),
+                "Error should mention that code is required for hierarchical searches",
             );
         });
     }

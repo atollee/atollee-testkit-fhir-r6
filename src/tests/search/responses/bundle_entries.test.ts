@@ -6,10 +6,11 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchSearchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
+    uniqueString,
 } from "../../utils/resource_creators.ts";
 import {
     Bundle,
@@ -114,7 +115,7 @@ export function runBundleEntriesTests(context: ITestContext) {
         const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
-                `Patient?family=MatchIncludePriority&_include=Observation:subject`,
+                `Patient?family=MatchIncludePriority&_revinclude=Observation:subject`,
         });
 
         assertEquals(
@@ -189,17 +190,18 @@ export function runBundleEntriesTests(context: ITestContext) {
     });
 
     it("Search results should not contain duplicate entries", async () => {
+        const uniqueFamilyName = uniqueString("DuplicateTest");
         const patient = await createTestPatient(context, {
-            family: "DuplicateTest",
+            family: uniqueFamilyName,
         });
         await createTestObservation(context, patient.id!, {
             code: "duplicate-test",
         });
 
-        const response = await fetchSearchWrapper({
+        const response = await fetchWrapper({
             authorized: true,
             relativeUrl:
-                `Patient?family=DuplicateTest&_include=Observation:subject`,
+                `Patient?family=${uniqueFamilyName}&_revinclude=Observation:subject`,
         });
 
         assertEquals(

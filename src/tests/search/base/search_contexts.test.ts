@@ -2,34 +2,36 @@
 
 import { ITestContext } from "../../types.ts";
 import { assertEquals, it } from "../../../../deps.test.ts";
-import { fetchSearchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
+    uniqueString,
 } from "../../utils/resource_creators.ts";
 import { Bundle, Observation, Patient } from "npm:@types/fhir/r4.d.ts";
 import { assertTrue } from "../../../../deps.test.ts";
 
 export function runSearchContextTests(context: ITestContext) {
-    if (!context.isTextContentSearchSupported()) {
-        return;
-    }
     it("Search across all resource types", async () => {
+        const searchTerm = uniqueString("AllResourceTest");
+
+        // Setup test data
         const patient = await createTestPatient(context, {
-            family: "AllResourceTest",
+            family: searchTerm, // Use exact same text in the family name
         });
-        const observation = await createTestObservation(context, patient.id!, {
-            code: "all-resource-test",
+        await createTestObservation(context, patient.id!, {
+            code: searchTerm, // Use exact same text in the code
+            valueString: searchTerm, // Also include in value for better searchability
         });
 
-        const response = await fetchSearchWrapper({
+        const response = await fetchWrapper({
             authorized: true,
             relativeUrl: `_search`,
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: `_content=AllResourceTest`,
+            body: `_content=${searchTerm}`,
         });
 
         assertEquals(response.success, true);
@@ -45,17 +47,25 @@ export function runSearchContextTests(context: ITestContext) {
     });
 
     it("Search across all resource types with _type parameter", async () => {
+        const searchTerm = uniqueString("AllResourceTest");
+
+        // Setup test data
         const patient = await createTestPatient(context, {
-            family: "TypeParameterTest",
+            family: searchTerm, // Use exact same text in the family name
         });
         await createTestObservation(context, patient.id!, {
-            code: "type-parameter-test",
+            code: searchTerm, // Use exact same text in the code
+            valueString: searchTerm, // Also include in value for better searchability
         });
 
-        const response = await fetchSearchWrapper({
+        const response = await fetchWrapper({
             authorized: true,
-            relativeUrl:
-                `?_type=Patient,Observation&_content=TypeParameterTest`,
+            relativeUrl: `_search`,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: `_type=Patient,Observation&_content=${searchTerm}`,
         });
 
         assertEquals(response.success, true);

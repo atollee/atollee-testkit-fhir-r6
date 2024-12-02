@@ -3,6 +3,7 @@ import {
     assertNotEquals as originalAssertNotEquals,
 } from "@std/assert";
 import { createAssertion } from "../bdd/assertion.ts";
+import { extractErrorMessage } from "../error.ts";
 
 export function assertNotEquals(
     actual: unknown,
@@ -18,6 +19,6 @@ export function assertNotEquals(
             msg,
         );
     } catch (error) {
-        throw new AssertionError(error.message);
+        throw new AssertionError(extractErrorMessage(error));
     }
 }

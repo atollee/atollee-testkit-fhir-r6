@@ -1,7 +1,8 @@
 import { parseArgs } from "@std/cli/parse-args";
-import { testSuite } from "./tests/suite.ts";
+import { restfulSuite } from "./tests/restful/restful_suite.ts";
 import { getTestResults, mainDescribe } from "./tests/utils/bdd/mod.ts";
 import { searchSuite } from "./tests/search/search_suite.ts";
+import { operationsSuite } from "./tests/operations/operations_suite.ts";
 
 const { args } = Deno;
 const parsedArgs = parseArgs(args, {
@@ -49,9 +50,30 @@ switch (suite) {
     case "restful":
         await mainDescribe(
             "FHIR Restful Tests",
-            async () => testSuite(callback),
+            async () => restfulSuite(callback),
         );
         break;
+    case "operations":
+        await mainDescribe(
+            "FHIR Operations Tests",
+            async () => operationsSuite(callback),
+        );
+        break;
+    case "all": {
+        await mainDescribe(
+            "FHIR Search Tests",
+            async () => searchSuite(callback),
+        );
+        await mainDescribe(
+            "FHIR Restful Tests",
+            async () => restfulSuite(callback),
+        );
+        await mainDescribe(
+            "FHIR Operations Tests",
+            async () => operationsSuite(callback),
+        );
+        break;
+    }
     default:
         console.error(
             `Invalid suite specified: ${suite}. Please use 'search' or 'restful'.`,

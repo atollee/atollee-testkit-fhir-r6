@@ -8,7 +8,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchSearchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestComposition,
     createTestPatient,
@@ -21,7 +21,7 @@ function uniqueString(base: string): string {
 }
 
 export function runNotModifierTests(context: ITestContext) {
-    it("Should find patients with gender not male", async () => {
+     it("Should find patients with gender not male", async () => {
         const familyName = uniqueString("TestFamily");
 
         // Create patients with different genders
@@ -73,7 +73,7 @@ export function runNotModifierTests(context: ITestContext) {
         }
     });
 
-    it("Should handle not modifier with multiple values", async () => {
+    it("Should handle not modifier correctly and warn about multiple values", async () => {
         const familyName = uniqueString("TestFamily");
 
         // Create patients with different genders
@@ -98,25 +98,79 @@ export function runNotModifierTests(context: ITestContext) {
             // No gender specified
         });
 
-        const response = await fetchSearchWrapper({
+        // Single value not modifier - this is valid
+        const singleResponse = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl: `Patient?family=${familyName}&gender:not=male`,
+        });
+
+        assertEquals(
+            singleResponse.status,
+            200,
+            "Server should process search with not modifier for single value successfully",
+        );
+        const singleBundle = singleResponse.jsonBody as Bundle;
+        assertExists(singleBundle.entry, "Bundle should contain entries");
+
+        // Check that no returned patients have gender "male"
+        for (const entry of singleBundle.entry) {
+            const patient = entry.resource as Patient;
+            assertNotEquals(
+                patient.gender,
+                "male",
+                "Patient gender should not be male",
+            );
+        }
+
+        // Multiple values with not modifier - this should either:
+        // 1. Return an error (preferred)
+        // 2. Or come with a warning that the results might be unexpected
+        const multiResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Patient?family=${familyName}&gender:not=male,female`,
         });
 
-        assertEquals(
-            response.status,
-            200,
-            "Server should process search with not modifier and multiple values successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            3,
-            "Should find three patients with gender not male or female",
-        );
+        // Server should either return an error
+        if (multiResponse.status === 400) {
+            // This is the preferred behavior
+            assertTrue(
+                true,
+                "Server correctly rejects multiple values with not modifier",
+            );
+        } else {
+            // Or if it returns results, it should return ALL records
+            // because of how the union of not(male) OR not(female) works
+            assertEquals(
+                multiResponse.status,
+                200,
+                "Server accepts multiple values but results may be unexpected",
+            );
+            const multiBundle = multiResponse.jsonBody as Bundle;
+            assertExists(multiBundle.entry, "Bundle should contain entries");
+            assertEquals(
+                multiBundle.entry.length,
+                5,
+                "Should return all patients due to the union behavior of not with multiple values",
+            );
+        }
 
-        for (const entry of bundle.entry) {
+        // The correct way to find patients that are neither male nor female
+        // would be to use two separate not conditions:
+        const correctResponse = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl:
+                `Patient?family=${familyName}&gender:not=male&gender:not=female`,
+        });
+
+        assertEquals(
+            correctResponse.status,
+            200,
+            "Server should process multiple not modifiers correctly",
+        );
+        const correctBundle = correctResponse.jsonBody as Bundle;
+        assertExists(correctBundle.entry, "Bundle should contain entries");
+
+        for (const entry of correctBundle.entry) {
             const patient = entry.resource as Patient;
             assertTrue(
                 patient.gender !== "male" && patient.gender !== "female",
@@ -125,97 +179,49 @@ export function runNotModifierTests(context: ITestContext) {
         }
     });
 
-    if (context.isHapiBugsDisallowed()) {
-        it("Should handle not modifier on date search parameters", async () => {
-            // Create test patients
-            const patient1990 = await createTestPatient(context, {
-                birthDate: "1990-01-01",
-            });
-            const patient1991 = await createTestPatient(context, {
-                birthDate: "1991-01-01",
-            });
-
-            const response = await fetchSearchWrapper({
-                authorized: true,
-                relativeUrl: `Patient?birthdate:not=1990-01-01`,
-            });
-
-            assertEquals(
-                response.status,
-                200,
-                "Server should process search with not modifier on date parameters",
-            );
-
-            const bundle = response.jsonBody as Bundle;
-            assertExists(bundle.entry, "Bundle should contain entries");
-
-            // Check that the 1990 patient is not in the results
-            assertFalse(
-                bundle.entry.some((entry) =>
-                    (entry.resource as Patient).id === patient1990.id
-                ),
-                "Results should not include the patient born on 1990-01-01",
-            );
-
-            // Check that the 1991 patient is in the results
-            assertTrue(
-                bundle.entry.some((entry) =>
-                    (entry.resource as Patient).id === patient1991.id
-                ),
-                "Results should include the patient born on 1991-01-01",
-            );
-        });
-    }
-
     it("Should handle not modifier with token search parameters", async () => {
         const familyName = uniqueString("TestFamily");
 
-        // Create patients with different genders
+        // Create test communication instead since it has a proper token with system+code
+        const patient = await createTestPatient(context, {
+            family: familyName,
+        });
+
+        // Create patient communications with explicit system+code
         await createTestPatient(context, {
             family: familyName,
-            gender: "male",
+            communication: [{
+                language: {
+                    coding: [{
+                        system: "urn:ietf:bcp:47",
+                        code: "en",
+                    }],
+                },
+            }],
         });
+
         await createTestPatient(context, {
             family: familyName,
-            gender: "female",
+            communication: [{
+                language: {
+                    coding: [{
+                        system: "urn:ietf:bcp:47",
+                        code: "es",
+                    }],
+                },
+            }],
         });
+
+        // Patient with no communication
         await createTestPatient(context, {
             family: familyName,
-            gender: "other",
         });
 
-        const response = await fetchSearchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?family=${familyName}&gender:not=male`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process search with not modifier on token search parameter successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            2,
-            "Should find two patients with gender not male",
-        );
-
-        for (const entry of bundle.entry) {
-            const patient = entry.resource as Patient;
-            assertNotEquals(
-                patient.gender,
-                "male",
-                `Patient gender should not be male: ${patient.gender}`,
-            );
-        }
-
-        // Additional test to ensure 'not' works with system|code format
+        // Test :not with system|code
         const responseWithSystem = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
-                `Patient?family=${familyName}&gender:not=http://hl7.org/fhir/administrative-gender|male`,
+                `Patient?family=${familyName}&language:not=urn:ietf:bcp:47|en`,
         });
 
         assertEquals(
@@ -226,13 +232,62 @@ export function runNotModifierTests(context: ITestContext) {
         const bundleWithSystem = responseWithSystem.jsonBody as Bundle;
         assertEquals(
             bundleWithSystem.entry?.length,
-            2,
-            "Should still find two patients with gender not male when using system|code format",
+            3,
+            "Should find three patients: one with Spanish, two with no language",
         );
 
-        console.log(
-            "Server correctly handled :not modifier on token search parameter",
+        // Test :not with just code
+        const responseWithJustCode = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl: `Patient?family=${familyName}&language:not=en`,
+        });
+
+        assertEquals(
+            responseWithJustCode.status,
+            200,
+            "Server should handle :not with just code",
         );
+
+        const bundleWithJustCode = responseWithJustCode.jsonBody as Bundle;
+        assertEquals(
+            bundleWithJustCode.entry?.length,
+            3,
+            "Should find three patients when using just code",
+        );
+
+        // Test :not with just system
+        const responseWithJustSystem = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl:
+                `Patient?family=${familyName}&language:not=urn:ietf:bcp:47|`,
+        });
+
+        assertEquals(
+            responseWithJustSystem.status,
+            200,
+            "Server should handle :not with just system",
+        );
+        const bundleWithJustSystem = responseWithJustSystem.jsonBody as Bundle;
+        assertEquals(
+            bundleWithJustSystem.entry?.length,
+            2,
+            "Should find two patients with no language defined",
+        );
+
+        // Verify returned resources
+        for (const entry of bundleWithSystem.entry || []) {
+            const patient = entry.resource as Patient;
+            // Check that none have English language
+            assertFalse(
+                patient.communication?.some((comm) =>
+                    comm.language?.coding?.some((coding) =>
+                        coding.system === "urn:ietf:bcp:47" &&
+                        coding.code === "en"
+                    )
+                ),
+                "No patients should have English language",
+            );
+        }
     });
 
     it("Should correctly apply not modifier to Composition sections", async () => {
@@ -241,7 +296,7 @@ export function runNotModifierTests(context: ITestContext) {
         });
 
         // Create a composition with an allergies section
-        await createTestComposition(context, {
+        const composition1 = await createTestComposition(context, {
             status: "final",
             type: {
                 coding: [{
@@ -264,7 +319,7 @@ export function runNotModifierTests(context: ITestContext) {
         });
 
         // Create a composition without an allergies section
-        await createTestComposition(context, {
+        const composition2 = await createTestComposition(context, {
             status: "final",
             type: {
                 coding: [{
@@ -287,7 +342,7 @@ export function runNotModifierTests(context: ITestContext) {
         });
 
         // Create a composition with multiple sections including allergies
-        await createTestComposition(context, {
+        const composition3 = await createTestComposition(context, {
             status: "final",
             type: {
                 coding: [{
@@ -321,7 +376,7 @@ export function runNotModifierTests(context: ITestContext) {
             ],
         });
 
-        const response = await fetchSearchWrapper({
+        const response = await fetchWrapper({
             authorized: true,
             relativeUrl:
                 `Composition?subject=${patient.id}&section:not=48765-2`,

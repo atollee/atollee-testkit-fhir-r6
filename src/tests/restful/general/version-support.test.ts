@@ -9,10 +9,9 @@ import {
     it,
 } from "../../../../deps.test.ts";
 import { CapabilityStatement, Patient } from "npm:@types/fhir/r4.d.ts";
+import { createTestPatient } from "../../utils/resource_creators.ts";
 
 export function runVersionSupportTests(context: ITestContext) {
-    const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
-
     it("Version Support - Check Capability Statement", async () => {
         const response = await fetchWrapper({
             authorized: true,
@@ -59,6 +58,9 @@ export function runVersionSupportTests(context: ITestContext) {
     });
 
     it("Version Support - Resource has versionId", async () => {
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
+
         const response = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
@@ -74,6 +76,9 @@ export function runVersionSupportTests(context: ITestContext) {
     });
 
     it("Version Support - Resource has lastUpdated", async () => {
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
+
         const response = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
@@ -89,6 +94,9 @@ export function runVersionSupportTests(context: ITestContext) {
     });
 
     it("Version Support - vread operation", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
+
         // First, get the current version
         const initialResponse = await fetchWrapper({
             authorized: true,
@@ -123,6 +131,9 @@ export function runVersionSupportTests(context: ITestContext) {
     });
 
     it("Version Support - Version-aware update", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
+
         // First, get the current version
         const initialResponse = await fetchWrapper({
             authorized: true,
@@ -162,39 +173,72 @@ export function runVersionSupportTests(context: ITestContext) {
     });
 
     it("Version Support - Conflict on outdated version update", async () => {
+        // Create initial test patient
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
+
         // First, get the current version
         const initialResponse = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
         });
 
-        const outdatedVersion = "1"; // Assuming this is an old version
+        assertEquals(
+            initialResponse.success,
+            true,
+            "Initial patient fetch should succeed",
+        );
 
-        const patient = initialResponse.jsonBody as Patient;
+        const initialPatient = initialResponse.jsonBody as Patient;
+        const initialVersion = initialPatient.meta?.versionId;
 
-        // Now, try to update with an outdated version
-        const updatedPatient = {
-            ...initialResponse.jsonBody,
-            active: !patient.active,
+        assertExists(
+            initialVersion,
+            "Patient should have an initial version",
+        );
+
+        // Make a first update to create a new version
+        const firstUpdate = {
+            ...initialPatient,
+            active: !initialPatient.active,
         };
 
-        const updateResponse = await fetchWrapper({
+        const firstUpdateResponse = await fetchWrapper({
+            authorized: true,
+            relativeUrl: `Patient/${validPatientId}`,
+            method: "PUT",
+            body: JSON.stringify(firstUpdate),
+        });
+
+        assertEquals(
+            firstUpdateResponse.success,
+            true,
+            "First update should succeed",
+        );
+
+        // Now try to update again using the initial version
+        const secondUpdate = {
+            ...initialPatient,
+            active: !firstUpdate.active,
+        };
+
+        const conflictResponse = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
             method: "PUT",
             headers: {
-                "If-Match": `W/"${outdatedVersion}"`,
+                "If-Match": `W/"${initialVersion}"`,
             },
-            body: JSON.stringify(updatedPatient),
+            body: JSON.stringify(secondUpdate),
         });
 
         assertEquals(
-            updateResponse.success,
+            conflictResponse.success,
             false,
             "Update with outdated version should fail",
         );
         assertEquals(
-            updateResponse.status,
+            conflictResponse.status,
             412,
             "Should return 412 Precondition Failed for outdated version update",
         );

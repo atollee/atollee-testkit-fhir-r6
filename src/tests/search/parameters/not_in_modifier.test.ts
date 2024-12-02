@@ -20,10 +20,12 @@ function uniqueString(base: string): string {
 
 export function runNotInModifierTests(context: ITestContext) {
     it("Should find conditions with codes not in a specified ValueSet", async () => {
+        // Create a ValueSet
         const valueSetId = uniqueString("test-valueset");
+        const valueSetUrl = `http://example.org/fhir/ValueSet/${valueSetId}`;
         const valueSet = await createTestValueSet(context, {
             id: valueSetId,
-            url: `http://example.org/fhir/ValueSet/${valueSetId}`,
+            url: valueSetUrl,
             compose: {
                 include: [{
                     system: "http://snomed.info/sct",
@@ -36,7 +38,10 @@ export function runNotInModifierTests(context: ITestContext) {
                             code: "773113008",
                             display: "Acute infectious hepatitis",
                         },
-                        { code: "95897009", display: "Amebic hepatitis" },
+                        {
+                            code: "95897009",
+                            display: "Amebic hepatitis",
+                        },
                     ],
                 }],
             },
@@ -67,30 +72,75 @@ export function runNotInModifierTests(context: ITestContext) {
             },
         });
 
-        const response = await fetchSearchWrapper({
+        // Create a condition with no code
+        await createTestCondition(context, {
+            // No code specified
+        });
+
+        // Test with fully qualified URL
+        const responseFullUrl = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl: `Condition?code:not-in=${
+                encodeURIComponent(valueSetUrl)
+            }`,
+        });
+
+        assertEquals(
+            responseFullUrl.status,
+            200,
+            "Server should process search with not-in modifier and full URL successfully",
+        );
+        const bundleFullUrl = responseFullUrl.jsonBody as Bundle;
+        assertExists(bundleFullUrl.entry, "Bundle should contain entries");
+        assertEquals(
+            bundleFullUrl.entry.length,
+            2,
+            "Should find two conditions: one with code not in ValueSet and one with no code",
+        );
+
+        // Test with logical reference
+        const responseLogical = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: `Condition?code:not-in=ValueSet/${valueSetId}`,
         });
 
         assertEquals(
-            response.status,
+            responseLogical.status,
             200,
-            "Server should process search with not-in modifier successfully",
+            "Server should process search with not-in modifier and logical reference successfully",
         );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
+        const bundleLogical = responseLogical.jsonBody as Bundle;
         assertEquals(
-            bundle.entry.length,
-            1,
-            "Should find exactly one condition not in the ValueSet",
+            bundleLogical.entry?.length,
+            2,
+            "Should find same number of conditions with logical reference",
         );
 
-        const condition = bundle.entry[0].resource as Condition;
-        assertEquals(
-            condition.code?.coding?.[0].code,
-            notInValueSetCode,
-            "Found condition should have the correct code not in the ValueSet",
-        );
+        // Verify returned resources
+        for (const bundle of [bundleFullUrl, bundleLogical]) {
+            for (const entry of bundle.entry!) {
+                const condition = entry.resource as Condition;
+
+                if (condition.code?.coding) {
+                    // If has code, verify it's not in the ValueSet
+                    assertTrue(
+                        condition.code.coding.every((coding) =>
+                            coding.system !== "http://snomed.info/sct" ||
+                            !valueSet.compose!.include[0].concept!.some(
+                                (concept) => concept.code === coding.code
+                            )
+                        ),
+                        "Conditions with codes should not have codes from the ValueSet",
+                    );
+                } else {
+                    // If no code, that's valid for :not-in
+                    assertTrue(
+                        true,
+                        "Condition with no code is valid for :not-in search",
+                    );
+                }
+            }
+        }
     });
 
     if (context.isNotInModifierSnomedSystemSupported()) {

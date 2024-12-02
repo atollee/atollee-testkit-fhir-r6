@@ -94,7 +94,6 @@ export function runAdvancedFilteringTests(context: ITestContext) {
                 "The returned Observation should match the created one",
             );
         });
-
         it("Should handle complex _filter queries", async () => {
             const patientName1 = uniqueString("Peter");
             const patientName2 = uniqueString("John");

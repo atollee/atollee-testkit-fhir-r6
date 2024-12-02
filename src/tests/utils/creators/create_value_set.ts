@@ -9,7 +9,7 @@ import { assertTrue } from "../../../../deps.test.ts";
 
 export interface ValueSetOptions extends IIdentifierOptions {
     id?: string; // Add this line
-    url: string;
+    url?: string;
     name?: string;
     status?: "draft" | "active" | "retired" | "unknown";
     compose?: {

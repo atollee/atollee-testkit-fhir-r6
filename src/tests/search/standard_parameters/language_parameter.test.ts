@@ -52,7 +52,10 @@ export function runLanguageParameterTests(context: ITestContext) {
                 title: uniqueString("EnglishQuestionnaire"),
                 language: "en",
             });
-
+            await createTestQuestionnaire(context, {
+                title: uniqueString("EnglishQuestionnaire"),
+                language: "es",
+            });
             const response = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl: `Questionnaire?_language=es`,
@@ -66,7 +69,7 @@ export function runLanguageParameterTests(context: ITestContext) {
             const bundle = response.jsonBody as Bundle;
             assertEquals(
                 bundle.total,
-                0,
+                1,
                 "Bundle should contain no entries for non-matching language",
             );
         });

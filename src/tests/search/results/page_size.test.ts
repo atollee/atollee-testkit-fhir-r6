@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchSearchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, patchUrl } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -138,9 +138,8 @@ export function runPageSizeTests(context: ITestContext) {
             patientCount,
             "Total count should match the total number of patients",
         );
-        assertEquals(
-            bundle.entry,
-            undefined,
+        assertTrue(
+            bundle.entry === undefined || bundle.entry.length === 0,
             "Bundle should not contain any entries",
         );
         assertEquals(
@@ -159,7 +158,6 @@ export function runPageSizeTests(context: ITestContext) {
             "Bundle should not contain a last link",
         );
     });
-
     if (context.isHapiBugsDisallowed()) {
         it("Should respect _count parameter in subsequent pages", async () => {
             const patientCount = 10;
@@ -188,7 +186,7 @@ export function runPageSizeTests(context: ITestContext) {
 
             const secondResponse = await fetchSearchWrapper({
                 authorized: true,
-                relativeUrl: nextLink.url,
+                relativeUrl: patchUrl(context, nextLink.url),
             });
 
             assertEquals(

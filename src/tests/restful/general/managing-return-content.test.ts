@@ -9,10 +9,12 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
+import { createTestPatient } from "../../utils/resource_creators.ts";
 
 export function runManagingReturnContentTests(context: ITestContext) {
     it("Managing Return Content - Server Default Timezone", async () => {
-        const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         const response = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
@@ -33,7 +35,8 @@ export function runManagingReturnContentTests(context: ITestContext) {
     });
 
     it("Managing Return Content - Return minimal content", async () => {
-        const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         const updatedPatientData = {
             resourceType: "Patient",
             id: validPatientId,
@@ -65,7 +68,8 @@ export function runManagingReturnContentTests(context: ITestContext) {
     });
 
     it("Managing Return Content - Return representation on update", async () => {
-        const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         const updatedPatientData = {
             resourceType: "Patient",
             id: validPatientId,
@@ -197,7 +201,9 @@ export function runManagingReturnContentTests(context: ITestContext) {
                 minimalResponse.jsonBody === undefined ||
                 Object.keys(minimalResponse.jsonBody).length === 0 ||
                 (minimalResponse.jsonBody.resourceType === "OperationOutcome" &&
+                    // deno-lint-ignore no-explicit-any
                     (minimalResponse.jsonBody as any).issue &&
+                    // deno-lint-ignore no-explicit-any
                     (minimalResponse.jsonBody as any).issue.length === 0),
             "Minimal response should have no body, an empty object, or an empty OperationOutcome",
         );

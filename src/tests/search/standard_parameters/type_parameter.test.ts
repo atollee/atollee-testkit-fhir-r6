@@ -6,14 +6,19 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchSearchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestCondition,
     createTestMedicationRequest,
     createTestObservation,
     createTestPatient,
 } from "../../utils/resource_creators.ts";
-import { Bundle, Condition, Observation } from "npm:@types/fhir/r4.d.ts";
+import {
+    Bundle,
+    Condition,
+    Observation,
+    OperationOutcome,
+} from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 
 export function runTypeParameterTests(context: ITestContext) {
@@ -106,7 +111,7 @@ export function runTypeParameterTests(context: ITestContext) {
 
             const response = await fetchSearchWrapper({
                 authorized: true,
-                relativeUrl: `?_type=Observation&patient=${patient.id}`,
+                relativeUrl: `?_type=Observation&subject=${patient.id}`,
             });
 
             assertEquals(
@@ -126,9 +131,11 @@ export function runTypeParameterTests(context: ITestContext) {
                 "Observation",
                 "The entry should be an Observation",
             );
-            assertEquals(
-                (bundle.entry[0].resource as Observation).subject?.reference,
-                `Patient/${patient.id}`,
+            assertTrue(
+                (bundle.entry[0].resource as Observation).subject?.reference
+                    ?.includes(
+                        `Patient/${patient.id}`,
+                    ),
                 "The Observation should be for the correct patient",
             );
         });
@@ -146,32 +153,45 @@ export function runTypeParameterTests(context: ITestContext) {
             );
         });
 
-        it("Should handle case-insensitive resource type", async () => {
+        it("Should require case-sensitive resource type", async () => {
             await createTestObservation(context, context.getValidPatientId(), {
                 code: "test-code",
             });
 
-            const response = await fetchSearchWrapper({
+            // Test correct casing
+            const responseCorrect = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: `?_type=Observation`,
+            });
+
+            assertEquals(
+                responseCorrect.status,
+                200,
+                "Server should accept correctly cased _type parameter",
+            );
+            const bundleCorrect = responseCorrect.jsonBody as Bundle;
+            assertExists(bundleCorrect.entry, "Bundle should contain entries");
+            assertTrue(
+                bundleCorrect.entry.length > 0,
+                "Bundle should contain at least one entry",
+            );
+
+            // Test incorrect casing
+            const responseIncorrect = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl: `?_type=observation`,
             });
 
             assertEquals(
-                response.status,
-                200,
-                "Server should process case-insensitive _type parameter successfully",
+                responseIncorrect.status,
+                400,
+                "Server should reject incorrectly cased _type parameter",
             );
-            const bundle = response.jsonBody as Bundle;
-            assertExists(bundle.entry, "Bundle should contain entries");
+
+            const outcome = responseIncorrect.jsonBody as OperationOutcome;
             assertTrue(
-                bundle.entry.length > 0,
-                "Bundle should contain at least one entry",
-            );
-            assertTrue(
-                bundle.entry.every((entry) =>
-                    entry.resource?.resourceType === "Observation"
-                ),
-                "All entries should be Observations",
+                outcome.issue[0].code.includes("invalid"),
+                "Should indicate invalid resource type",
             );
         });
 

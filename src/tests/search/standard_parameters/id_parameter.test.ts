@@ -69,44 +69,41 @@ export function runIdParameterTests(context: ITestContext) {
             `Generated patient ID ${patient.id} should be a valid FHIR id`,
         );
 
-        // Test with correct case
-        const correctCaseResponse = await fetchWrapper({
+        // Test with correct id
+        const correctResponse = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient?_id=Patient/${patient.id}`,
+            relativeUrl: `Patient?_id=${patient.id}`,
         });
 
         assertEquals(
-            correctCaseResponse.status,
+            correctResponse.status,
             200,
             "Server should process _id parameter successfully",
         );
-        const correctCaseBundle = correctCaseResponse.jsonBody as Bundle;
+        const correctBundle = correctResponse.jsonBody as Bundle;
         assertEquals(
-            correctCaseBundle.total,
+            correctBundle.total,
             1,
             "Bundle should contain one entry for exact match",
         );
 
-        // Test with uppercase (which should be invalid)
-        const upperCaseResponse = await fetchWrapper({
+        // Test with non-matching id
+        const nonMatchingResponse = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient?_id=PATIENT/${patient.id}`,
+            relativeUrl: `Patient?_id=${patient.id}modified`,
         });
 
-        // The server behavior for invalid IDs is not strictly specified, so we allow two possibilities
-        if (upperCaseResponse.status === 200) {
-            const upperCaseBundle = upperCaseResponse.jsonBody as Bundle;
-            assertTrue(
-                (upperCaseBundle.total ?? 0) <= 1,
-                "Bundle should contain maximum one entry for case-mismatch",
-            );
-        } else {
-            assertEquals(
-                upperCaseResponse.status,
-                400,
-                "Server may return a 400 Bad Request for invalid ID format",
-            );
-        }
+        assertEquals(
+            nonMatchingResponse.status,
+            200,
+            "Server should process non-matching _id parameter successfully",
+        );
+        const nonMatchingBundle = nonMatchingResponse.jsonBody as Bundle;
+        assertEquals(
+            nonMatchingBundle.total,
+            0,
+            "Bundle should contain no entries for non-matching id",
+        );
     });
 
     it("Should only search within specified resource type", async () => {

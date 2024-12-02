@@ -33,13 +33,7 @@ export async function createTestMedicationRequest(
     const defaultOptions: MedicationRequestOptions = {
         status: "active",
         intent: "order",
-        medicationCodeableConcept: {
-            coding: [{
-                system: "http://www.nlm.nih.gov/research/umls/rxnorm",
-                code: "1049502",
-                display: "Acetaminophen 325 MG Oral Tablet",
-            }],
-        },
+
         identifier: createIdentifierOptions(options.identifier),
     };
 
@@ -63,6 +57,14 @@ export async function createTestMedicationRequest(
         newMedicationRequest.contained = [options.containedMedication];
         newMedicationRequest.medicationReference = {
             reference: `#${options.containedMedication.id}`,
+        };
+    } else if (!newMedicationRequest.medicationCodeableConcept) {
+        newMedicationRequest.medicationCodeableConcept = {
+            coding: [{
+                system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                code: "1049502",
+                display: "Acetaminophen 325 MG Oral Tablet",
+            }],
         };
     }
 

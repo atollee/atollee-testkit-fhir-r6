@@ -3,6 +3,7 @@ import {
     AssertionError,
 } from "@std/assert";
 import { createAssertion } from "../bdd/assertion.ts";
+import { extractErrorMessage } from "../error.ts";
 
 export function assertEquals(
     actual: unknown,
@@ -18,6 +19,6 @@ export function assertEquals(
             msg,
         );
     } catch (error) {
-        throw new AssertionError(error.message);
+        throw new AssertionError(extractErrorMessage(error));
     }
 }

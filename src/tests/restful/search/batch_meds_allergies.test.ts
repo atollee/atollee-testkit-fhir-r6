@@ -150,7 +150,7 @@ export function runBatchMedsAllergiesTest(context: ITestContext) {
                 {
                     request: {
                         method: "GET",
-                        url: `MedicationStatement?patient=Patient/${patientId}`,
+                        url: `MedicationStatement?subject=Patient/${patientId}`,
                     },
                 },
                 {
@@ -162,13 +162,13 @@ export function runBatchMedsAllergiesTest(context: ITestContext) {
                 {
                     request: {
                         method: "GET",
-                        url: `Condition?patient=Patient/${patientId}`,
+                        url: `Condition?subject=Patient/${patientId}`,
                     },
                 },
                 {
                     request: {
                         method: "GET",
-                        url: `MedicationStatement?patient=Patient/${patientId}&status=active`,
+                        url: `MedicationStatement?subject=Patient/${patientId}&status=active`,
                     },
                 },
             ],

@@ -4,41 +4,50 @@ import { fetchWrapper } from "../../utils/fetch.ts";
 import { ITestContext } from "../../types.ts";
 import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
 import { Patient } from "npm:@types/fhir/r4.d.ts";
+import { createTestPatient } from "../../utils/resource_creators.ts";
 
-export function runConditionalUpdateTests(_context: ITestContext) {
+export function runConditionalUpdateTests(context: ITestContext) {
     it("Conditional Update - No matches, create new resource", async () => {
         const value = Date.now();
         const newPatient: Patient = {
             resourceType: "Patient",
             name: [{ family: "Doe", given: ["John"] }],
-            identifier: [{ system: "http://example.com/identifier", value: `${value}` }],
+            identifier: [{
+                system: "http://example.com/identifier",
+                value: `${value}`,
+            }],
         };
         const response = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient?identifier=http://example.com/identifier|${value}`,
+            relativeUrl:
+                `Patient?identifier=http://example.com/identifier|${value}`,
             method: "PUT",
             body: JSON.stringify(newPatient),
         });
 
-        assertEquals(response.success, true, "Conditional create should be successful");
-        assertEquals(response.status, 201, "Should return 201 Created for new resource");
-        assertExists(response.headers.get("Location"), "Response should include a Location header");
+        assertEquals(
+            response.success,
+            true,
+            "Conditional create should be successful",
+        );
+        assertEquals(
+            response.status,
+            201,
+            "Should return 201 Created for new resource",
+        );
+        assertExists(
+            response.headers.get("Location"),
+            "Response should include a Location header",
+        );
     });
 
     it("Conditional Update - One match, update existing resource", async () => {
-        const value = `67890-${Date.now()}`;
+        const value = `value-${Date.now()}`;
         // First, create a patient
-        const initialPatient: Patient = {
-            resourceType: "Patient",
+        const initialPatient: Patient = await createTestPatient(context, {
             name: [{ family: "Doe", given: ["Jane"] }],
             identifier: [{ system: "http://example.com/identifier", value }],
-        };
-
-        await fetchWrapper({
-            authorized: true,
-            relativeUrl: "Patient",
-            method: "POST",
-            body: JSON.stringify(initialPatient),
+            active: false,
         });
 
         // Now, update the patient conditionally
@@ -49,52 +58,68 @@ export function runConditionalUpdateTests(_context: ITestContext) {
 
         const response = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient?identifier=http://example.com/identifier|${value}`,
+            relativeUrl:
+                `Patient?identifier=http://example.com/identifier|${value}`,
             method: "PUT",
             body: JSON.stringify(updatedPatient),
         });
 
-        assertEquals(response.success, true, "Conditional update should be successful");
-        assertEquals(response.status, 200, "Should return 200 OK for updated resource");
+        assertEquals(
+            response.success,
+            true,
+            "Conditional update should be successful",
+        );
+        assertEquals(
+            response.status,
+            200,
+            "Should return 200 OK for updated resource",
+        );
     });
 
     it("Conditional Update - Multiple matches", async () => {
         // First, create multiple patients with the same identifier
-        const patient: Patient = {
-            resourceType: "Patient",
+        const uniqueIdentifier = `unique-${Date.now()}`;
+        console.log(uniqueIdentifier);
+        const patient1: Patient = await createTestPatient(context, {
             name: [{ family: "Smith" }],
-            identifier: [{ system: "http://example.com/identifier", value: "multi-match" }],
-        };
-
-        await fetchWrapper({
-            authorized: true,
-            relativeUrl: "Patient",
-            method: "POST",
-            body: JSON.stringify(patient),
+            identifier: [{
+                system: "http://example.com/identifier",
+                value: uniqueIdentifier,
+            }],
         });
 
-        await fetchWrapper({
-            authorized: true,
-            relativeUrl: "Patient",
-            method: "POST",
-            body: JSON.stringify(patient),
+        await createTestPatient(context, {
+            name: [{ family: "Smith" }],
+            identifier: [{
+                system: "http://example.com/identifier",
+                value: uniqueIdentifier,
+            }],
         });
 
         // Now, try to update conditionally
         const updatedPatient: Patient = {
-            ...patient,
+            ...patient1,
             active: true,
         };
-
+        //await sleep(25000);
         const response = await fetchWrapper({
             authorized: true,
-            relativeUrl: "Patient?identifier=http://example.com/identifier|multi-match",
+            relativeUrl:
+                `Patient?identifier=http://example.com/identifier|${uniqueIdentifier}`,
             method: "PUT",
             body: JSON.stringify(updatedPatient),
         });
 
-        assertEquals(response.success, false, "Conditional update with multiple matches should fail");
-        assertEquals(response.status, 412, "Should return 412 Precondition Failed for multiple matches");
+        assertEquals(
+            response.success,
+            false,
+            "Conditional update with multiple matches should fail",
+        );
+        assertEquals(
+            response.status,
+            412,
+            "Should return 412 Precondition Failed for multiple matches",
+        );
     });
 
     it("Conditional Update - If-None-Match (specific version)", async () => {
@@ -102,7 +127,10 @@ export function runConditionalUpdateTests(_context: ITestContext) {
         const initialPatient: Patient = {
             resourceType: "Patient",
             name: [{ family: "Johnson" }],
-            identifier: [{ system: "http://example.com/identifier", value: "if-none-match-test" }],
+            identifier: [{
+                system: "http://example.com/identifier",
+                value: "if-none-match-test",
+            }],
         };
 
         const createResponse = await fetchWrapper({
@@ -130,8 +158,16 @@ export function runConditionalUpdateTests(_context: ITestContext) {
             },
             body: JSON.stringify(updatedPatient),
         });
-        assertEquals(response.success, false, "Conditional update with matching ETag should fail");
-        assertEquals(response.status, 412, "Should return 412 Precondition Failed for matching ETag");
+        assertEquals(
+            response.success,
+            false,
+            "Conditional update with matching ETag should fail",
+        );
+        assertEquals(
+            response.status,
+            412,
+            "Should return 412 Precondition Failed for matching ETag",
+        );
     });
 
     it("Conditional Update - If-None-Match (wildcard)", async () => {
@@ -144,7 +180,8 @@ export function runConditionalUpdateTests(_context: ITestContext) {
 
         const response = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient?identifier=http://example.com/identifier|${value}`,
+            relativeUrl:
+                `Patient?identifier=http://example.com/identifier|${value}`,
             method: "PUT",
             headers: {
                 "If-None-Match": "*",
@@ -152,7 +189,15 @@ export function runConditionalUpdateTests(_context: ITestContext) {
             body: JSON.stringify(newPatient),
         });
 
-        assertEquals(response.success, true, "Conditional create with If-None-Match wildcard should be successful");
-        assertEquals(response.status, 201, "Should return 201 Created for new resource");
+        assertEquals(
+            response.success,
+            true,
+            "Conditional create with If-None-Match wildcard should be successful",
+        );
+        assertEquals(
+            response.status,
+            201,
+            "Should return 201 Created for new resource",
+        );
     });
 }

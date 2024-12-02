@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchSearchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -14,7 +14,6 @@ import {
 } from "../../utils/resource_creators.ts";
 import { Bundle, Practitioner } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
-import { CONFIG } from "../../config.ts";
 
 export function runPagingAndIncludesTests(context: ITestContext) {
     if (context.isHapiBugsDisallowed()) {
@@ -78,7 +77,7 @@ export function runPagingAndIncludesTests(context: ITestContext) {
             );
 
             // Second page
-            const secondPageResponse = await fetchSearchWrapper({
+            const secondPageResponse = await fetchWrapper({
                 authorized: true,
                 relativeUrl: nextPageUrl,
             });
@@ -178,7 +177,7 @@ export function runPagingAndIncludesTests(context: ITestContext) {
             );
 
             // Second page
-            const secondPageResponse = await fetchSearchWrapper({
+            const secondPageResponse = await fetchWrapper({
                 authorized: true,
                 relativeUrl: nextPageUrl,
             });

@@ -8,10 +8,12 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
+import { createTestPatient } from "../../utils/resource_creators.ts";
 
 export function runConditionalReadTests(context: ITestContext) {
     it("Conditional Read - If-Modified-Since with unchanged resource", async () => {
-        const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         // First, get the current resource and its Last-Modified date
         const initialResponse = await fetchWrapper({
             authorized: true,
@@ -55,7 +57,8 @@ export function runConditionalReadTests(context: ITestContext) {
     });
 
     it("Conditional Read - If-Modified-Since with changed resource", async () => {
-        const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         const initialResponse = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
@@ -87,7 +90,8 @@ export function runConditionalReadTests(context: ITestContext) {
     });
 
     it("Conditional Read - If-None-Match with matching ETag", async () => {
-        const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         // First, get the current resource and its ETag
         const initialResponse = await fetchWrapper({
             authorized: true,
@@ -128,7 +132,8 @@ export function runConditionalReadTests(context: ITestContext) {
     });
 
     it("Conditional Read - If-None-Match with non-matching ETag", async () => {
-        const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         const nonMatchingEtag = 'W/"non-matching-etag"';
 
         const response = await fetchWrapper({
@@ -148,7 +153,8 @@ export function runConditionalReadTests(context: ITestContext) {
     });
 
     it("Conditional Read - Server handles both If-Modified-Since and If-None-Match", async () => {
-        const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         // First, get the current resource, its ETag, and Last-Modified date
         const initialResponse = await fetchWrapper({
             authorized: true,

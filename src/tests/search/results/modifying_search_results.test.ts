@@ -178,6 +178,13 @@ export function runModifyingSearchResultsTests(context: ITestContext) {
                 name: [{ given: ["TestPatient"], family: "TestFamily" }],
                 gender: "male",
                 birthDate: "1990-01-01",
+                maritalStatus: {
+                    coding: [{
+                        system:
+                            "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
+                        code: "S",
+                    }],
+                },
             });
 
             const response = await fetchSearchWrapper({
@@ -196,14 +203,9 @@ export function runModifyingSearchResultsTests(context: ITestContext) {
                 "Returned Patient should have name",
             );
             assertEquals(
-                returnedPatient.gender,
+                returnedPatient.maritalStatus,
                 undefined,
-                "Returned Patient should not have gender",
-            );
-            assertEquals(
-                returnedPatient.birthDate,
-                undefined,
-                "Returned Patient should not have birthDate",
+                "Returned Patient should not have martialStatus",
             );
         });
     }

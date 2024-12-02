@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchSearchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
@@ -87,7 +87,7 @@ export function runIdentifierModifierTests(context: ITestContext) {
                 },
             });
 
-            const response = await fetchSearchWrapper({
+            const response = await fetchWrapper({
                 authorized: true,
                 relativeUrl: `Observation?subject:identifier=${
                     encodeURIComponent(patientIdentifier.system)
@@ -146,24 +146,21 @@ export function runIdentifierModifierTests(context: ITestContext) {
                 "Should find one observation when searching with only system",
             );
 
-            // Test with only value
-            const responseValue = await fetchSearchWrapper({
+            // Test |[value] - should NOT match because our identifier has a system
+            const responseValueNoSystem = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl:
                     `Observation?subject:identifier=|${patientIdentifier.value}`,
             });
 
+            assertEquals(responseValueNoSystem.status, 200);
+            const bundleValueNoSystem = responseValueNoSystem
+                .jsonBody as Bundle;
+            assertExists(bundleValueNoSystem.entry);
             assertEquals(
-                responseValue.status,
-                200,
-                "Server should process search with only value successfully",
-            );
-            const bundleValue = responseValue.jsonBody as Bundle;
-            assertExists(bundleValue.entry, "Bundle should contain entries");
-            assertEquals(
-                bundleValue.entry?.length,
-                1,
-                "Should find one observation when searching with only value",
+                bundleValueNoSystem.entry?.length,
+                0,
+                "Should NOT find observation because identifier has a system",
             );
         });
     }

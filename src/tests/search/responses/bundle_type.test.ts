@@ -1,12 +1,12 @@
 // tests/search/responses/bundle_type.test.ts
 
-import { assertEquals, assertTrue, it } from "../../../../deps.test.ts";
+import { assertEquals, it } from "../../../../deps.test.ts";
 import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestObservation,
     createTestPatient,
 } from "../../utils/resource_creators.ts";
-import { Bundle, Observation, Patient } from "npm:@types/fhir/r4.d.ts";
+import { Bundle } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 
 export function runBundleTypeTests(context: ITestContext) {
@@ -57,94 +57,42 @@ export function runBundleTypeTests(context: ITestContext) {
     });
 
     if (context.isMultiTypeSearchSupported()) {
-        it("Search across multiple resource types should return a bundle with type 'searchset'", async () => {
-            // Create a unique family name and birth date for the test patient
-            const uniqueFamilyName = "MultiTypeSearchTest" + Date.now();
-            const uniqueBirthDate = "1990-01-01";
-
-            // Create a test patient with the unique family name and birth date
+        it("Search across multiple resource types should only allow common search parameters", async () => {
+            // Create test resources
             const patient = await createTestPatient(context, {
-                family: uniqueFamilyName,
-                birthDate: uniqueBirthDate,
+                family: "MultiTypeSearchTest" + Date.now(),
             });
 
-            // Create a test observation for this patient
-            const uniqueObservationCode = "multi-type-search-test-" +
-                Date.now();
-            await createTestObservation(context, patient.id!, {
-                code: uniqueObservationCode,
-                system: "http://example.com/test-codes",
-            });
+            await createTestObservation(context, patient.id!, {});
 
-            // Perform a search across multiple resource types
-            const response = await fetchSearchWrapper({
+            // Test valid multi-type search with common parameter (_id, _lastUpdated etc.)
+            const validResponse = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl: "_search",
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
-                body:
-                    `_type=Patient,Observation&family=${uniqueFamilyName}&birthdate=${uniqueBirthDate}&code=${uniqueObservationCode}`,
+                body: `_type=Patient,Observation&_lastUpdated=gt2020-01-01`,
+            });
+
+            assertEquals(validResponse.status, 200);
+
+            // Test invalid multi-type search with non-common parameter
+            const invalidResponse = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl: "_search",
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: `_type=Patient,Observation&family=TestFamily`,
             });
 
             assertEquals(
-                response.success,
-                true,
-                "Multi-type search request should be successful",
-            );
-
-            const bundle = response.jsonBody as Bundle;
-            assertEquals(
-                bundle.type,
-                "searchset",
-                "Bundle type should be 'searchset' for multi-type search",
-            );
-
-            assertTrue(
-                bundle.entry && bundle.entry.length >= 2,
-                "Should have at least two entries for multi-type search",
-            );
-
-            // Check that we have both a Patient and an Observation in the results
-            const hasPatient = bundle.entry?.some((entry) =>
-                entry.resource?.resourceType === "Patient"
-            );
-            const hasObservation = bundle.entry?.some((entry) =>
-                entry.resource?.resourceType === "Observation"
-            );
-
-            assertTrue(hasPatient, "Search results should include a Patient");
-            assertTrue(
-                hasObservation,
-                "Search results should include an Observation",
-            );
-
-            // Verify the Patient in the results
-            const patientEntry = bundle.entry?.find((entry) =>
-                entry.resource?.resourceType === "Patient"
-            );
-            const patientResource = patientEntry?.resource as Patient;
-            assertEquals(
-                patientResource?.name?.[0]?.family,
-                uniqueFamilyName,
-                "The Patient in the results should have the correct family name",
-            );
-            assertEquals(
-                patientResource?.birthDate,
-                uniqueBirthDate,
-                "The Patient in the results should have the correct birth date",
-            );
-
-            // Verify the Observation in the results
-            const observationEntry = bundle.entry?.find((entry) =>
-                entry.resource?.resourceType === "Observation"
-            );
-            assertEquals(
-                (observationEntry?.resource as Observation)?.code?.coding?.[0]
-                    ?.code,
-                uniqueObservationCode,
-                "The Observation in the results should have the correct code",
+                invalidResponse.status,
+                400,
+                "Server should return 400 when using parameters not common to all specified types",
             );
         });
     }

@@ -1,8 +1,9 @@
 import { CONFIG } from "../config.ts";
-import { IFetchOptions, IFetchResponse } from "../types.ts";
+import { IFetchOptions, IFetchResponse, ITestContext } from "../types.ts";
 import { recordHttpInteraction } from "./bdd/mod.ts";
 import { HttpRequest } from "./bdd/types.ts";
 import { createTestIdentifierString } from "./creators/utils.ts";
+import { extractErrorMessage } from "./error.ts";
 import { getAccessToken } from "./oauth.ts";
 
 export async function fetchWrapper(
@@ -17,9 +18,24 @@ export async function fetchWrapper(
         ...otherOptions
     } = options;
 
+    let relativeTargetUrl = relativeUrl;
+    let logLevel: string | undefined = undefined;
+
+    if (CONFIG.traceFetchCalls) {
+        logLevel = "trace";
+    } else if (CONFIG.debugFetchCalls) {
+        logLevel = "debug";
+    }
+    if (logLevel) {
+        if (relativeTargetUrl.indexOf("?") !== -1) {
+            relativeTargetUrl += "&_loglevel=" + logLevel;
+        } else {
+            relativeTargetUrl += "?_loglevel=" + logLevel;
+        }
+    }
     const baseUrl = options.overrideBaseUrl || CONFIG.fhirServerUrl;
     const fhirServerUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
-    const url = new URL(relativeUrl, fhirServerUrl).toString();
+    const url = new URL(relativeTargetUrl, fhirServerUrl).toString();
 
     const headers = new Headers(customHeaders);
     if (!headers.has("Content-Type")) {
@@ -103,7 +119,7 @@ export async function fetchWrapper(
             jsonParsed: false,
             headers: new Headers(),
             jsonBody: null,
-            rawBody: error.message,
+            rawBody: extractErrorMessage(error),
         };
 
         // Record the HTTP interaction with error
@@ -111,7 +127,7 @@ export async function fetchWrapper(
             status: errorResponse.status,
             statusText: "Error",
             headers: {},
-            body: error.message,
+            body: extractErrorMessage(error),
         });
 
         if (CONFIG.showFetchResponses) {
@@ -157,4 +173,13 @@ export async function fetchSearchWrapper(
         ...restOptions,
         relativeUrl: newRelativeUrl,
     });
+}
+
+export function patchUrl(context: ITestContext, url: string): string {
+    const baseUrl = context.getBaseUrl();
+    let nextLinkUrl = url.replace(baseUrl, "");
+    if (nextLinkUrl.startsWith("/")) {
+        nextLinkUrl = nextLinkUrl.substring(1);
+    }
+    return nextLinkUrl;
 }

@@ -14,10 +14,8 @@ import {
     createTestProcedure,
 } from "../../../utils/resource_creators.ts";
 import {
-    Bundle,
-    Location,
-    OperationOutcome,
-    Procedure,
+    Bundle, OperationOutcome,
+    Procedure
 } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../../types.ts";
 
@@ -55,7 +53,7 @@ export function runAboveModifierReferenceTests(context: ITestContext) {
 
             const response = await fetchSearchWrapper({
                 authorized: true,
-                relativeUrl: `Procedure?location:above=${roomA101.id}`,
+                relativeUrl: `Procedure?location:above=Location/${roomA101.id}`,
             });
 
             assertEquals(

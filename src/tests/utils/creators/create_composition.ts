@@ -6,6 +6,7 @@ import { fetchWrapper } from "../fetch.ts";
 import { createTestPractitioner } from "./create_practitioner.ts";
 import { IIdentifierOptions } from "./types.ts";
 import { createTestIdentifier } from "../resource_creators.ts";
+import { assertTrue } from "../../../../deps.test.ts";
 
 interface CompositionSectionOptions extends IIdentifierOptions {
     code?: {
@@ -53,6 +54,17 @@ export async function createTestComposition(
         identifier: createTestIdentifier(),
     };
 
+    for (const section of newComposition.section ?? []) {
+        if (
+            section.entry === undefined || section.section === undefined ||
+            section.text === undefined
+        ) {
+            section.text = {
+                status: "generated",
+                div: "<div>Dummy text</div>",
+            };
+        }
+    }
     const response = await fetchWrapper({
         authorized: true,
         relativeUrl: "Composition",
@@ -60,5 +72,6 @@ export async function createTestComposition(
         body: JSON.stringify(newComposition),
     });
 
+    assertTrue(response.success, "creation of composition was successful");
     return response.jsonBody as Composition;
 }

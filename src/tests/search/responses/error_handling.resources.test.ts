@@ -71,7 +71,7 @@ export function runErrorHandlingResourcesTests(context: ITestContext) {
     it("Should handle search with illegal/unsupported modifier", async () => {
         const response = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl: `Condition?onset:unsupported=1995`,
+            relativeUrl: `Condition?onset-age:unsupported=1995`,
         });
 
         assertTrue(
@@ -97,7 +97,7 @@ export function runErrorHandlingResourcesTests(context: ITestContext) {
     it("Should handle search with incorrectly formatted date", async () => {
         const response = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl: `Condition?onset=23-May-2009`,
+            relativeUrl: `Condition?onset-date=23-May-2009`,
         });
 
         assertTrue(

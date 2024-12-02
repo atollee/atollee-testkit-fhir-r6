@@ -12,6 +12,7 @@ import {
     createTestObservation,
     createTestPatient,
     createTestPerson,
+    uniqueString,
 } from "../../utils/resource_creators.ts";
 import {
     Bundle,
@@ -22,10 +23,6 @@ import {
     Person,
 } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
-
-function uniqueString(base: string): string {
-    return `${base}-${Date.now()}`;
-}
 
 export function runSearchingMultipleResourceTypesTests(context: ITestContext) {
     if (context.isMultipleResourceTypeSearchSupported()) {
@@ -38,7 +35,7 @@ export function runSearchingMultipleResourceTypesTests(context: ITestContext) {
                 identifier: [{ value: uniqueId }],
             });
 
-            const response = await fetchSearchWrapper({
+            const response = await fetchWrapper({
                 authorized: true,
                 method: "GET",
                 relativeUrl: `?identifier=${uniqueId}`,

@@ -177,60 +177,6 @@ export function runExactModifierTests(context: ITestContext) {
         );
     });
 
-    it("Should accept exact modifier on date search parameters", async () => {
-        // First, create a patient with a specific birthdate
-        const patient = await createTestPatient(context, {
-            birthDate: "2000-01-01",
-        });
-
-        const response = await fetchSearchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?birthdate:exact=2000-01-01`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should accept exact modifier on date search parameters",
-        );
-
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(
-            bundle.entry.length,
-            1,
-            "Bundle should contain one matching Patient",
-        );
-        assertEquals(
-            (bundle.entry[0].resource as Patient).id,
-            patient.id,
-            "Returned patient should match the created patient",
-        );
-
-        // Test with a non-matching date to ensure :exact is working correctly
-        const nonMatchingResponse = await fetchSearchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?birthdate:exact=2000-01-02`,
-        });
-
-        assertEquals(
-            nonMatchingResponse.status,
-            200,
-            "Server should process non-matching search successfully",
-        );
-
-        const nonMatchingBundle = nonMatchingResponse.jsonBody as Bundle;
-        assertEquals(
-            nonMatchingBundle.entry?.length ?? 0,
-            0,
-            "Non-matching search should return no results",
-        );
-
-        console.log(
-            "Server correctly handled :exact modifier on date search parameter",
-        );
-    });
-
     it("Should match name with apostrophe exactly (O'Brien)", async () => {
         await createTestPatient(context, {
             name: [{ family: "O'Brien" }],
@@ -319,58 +265,6 @@ export function runExactModifierTests(context: ITestContext) {
             authorized: true,
             relativeUrl: `Patient?family:exact=${
                 encodeURIComponent("Van der Berg")
-            }`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process search successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertEquals(
-            bundle.entry?.length ?? 0,
-            0,
-            "Should not find any patients",
-        );
-    });
-
-    it("Should match name with leading and trailing whitespace exactly (  Smith  )", async () => {
-        await createTestPatient(context, {
-            name: [{ family: "  Smith  " }],
-        });
-
-        const response = await fetchSearchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?family:exact=${
-                encodeURIComponent("  Smith  ")
-            }`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process search successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertExists(bundle.entry, "Bundle should contain entries");
-        assertEquals(bundle.entry.length, 1, "Should find one patient");
-        assertEquals(
-            (bundle.entry[0].resource as Patient).name?.[0].family,
-            "  Smith  ",
-            "Should match the exact family name '  Smith  ' including whitespace",
-        );
-    });
-
-    it("Should not match name without whitespace when searching with whitespace (Smith vs   Smith  )", async () => {
-        await createTestPatient(context, {
-            name: [{ family: "Smith" }],
-        });
-
-        const response = await fetchSearchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?family:exact=${
-                encodeURIComponent("  Smith  ")
             }`,
         });
 

@@ -97,6 +97,7 @@ export async function createTestPatient(
         maritalStatus: mergedOptions.maritalStatus,
         communication: options.communication,
         managingOrganization: options.managingOrganization,
+        generalPractitioner: options.generalPractitioner,
     };
 
     if (mergedOptions.id) {

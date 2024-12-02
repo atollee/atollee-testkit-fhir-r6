@@ -13,10 +13,8 @@ import {
     createTestPatient,
 } from "../../utils/resource_creators.ts";
 import { Bundle, Observation } from "npm:@types/fhir/r4.d.ts";
-import { CONFIG } from "../../config.ts";
 
 export function runSearchInputTests(context: ITestContext) {
-    /*
     it("Should find a resource when filtering across all resources with _id", async () => {
         // Create a test patient
         const patient = await createTestPatient(context, {
@@ -31,7 +29,7 @@ export function runSearchInputTests(context: ITestContext) {
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: `_id=${patient.id}`,
+            body: `_id=${patient.id}&_type=Patient`,
         });
 
         assertEquals(response.status, 200, "Response status should be 200");
@@ -66,7 +64,7 @@ export function runSearchInputTests(context: ITestContext) {
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: `_id=non-existent-id-${Date.now()}`,
+            body: `_id=non-existent-id-${Date.now()}&_type=Patient`,
         });
 
         assertEquals(
@@ -87,7 +85,7 @@ export function runSearchInputTests(context: ITestContext) {
             "Bundle should contain no results for non-existent id",
         );
     });
-    */
+
     it("Filter on specific resource (Patient.birthDate)", async () => {
         await createTestPatient(context, {
             family: "OldPatient",
@@ -116,7 +114,7 @@ export function runSearchInputTests(context: ITestContext) {
             });
             const response = await fetchSearchWrapper({
                 authorized: true,
-                relativeUrl: `Patient?_content=UniqueNameForSearch`,
+                relativeUrl: `Patient?_content=UniqueNameForSearch 1990`,
             });
 
             assertEquals(response.success, true);
@@ -165,7 +163,11 @@ export function runSearchInputTests(context: ITestContext) {
         });
 
         assertEquals(correctCaseResponse.success, true);
-        assertEquals(incorrectCaseResponse.success, false);
+        if (context.isSearchParameterCaseInsensitiveSupported()) {
+            assertEquals(incorrectCaseResponse.success, true);
+        } else {
+            assertEquals(incorrectCaseResponse.success, false);
+        }
     });
 
     it("Order of operations (filters, sort, paging, includes)", async () => {
@@ -206,9 +208,9 @@ export function runSearchInputTests(context: ITestContext) {
         });
 
         // Search without _include
-        const basicResponse = await fetchSearchWrapper({
+        const basicResponse = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Observation?code=15074-8&patient=${patient.id}`,
+            relativeUrl: `Observation?code=15074-8&subject=${patient.id}`,
         });
 
         assertEquals(
@@ -229,10 +231,10 @@ export function runSearchInputTests(context: ITestContext) {
         );
 
         // Search with _include
-        const includeResponse = await fetchSearchWrapper({
+        const includeResponse = await fetchWrapper({
             authorized: true,
             relativeUrl:
-                `Observation?code=15074-8&patient=${patient.id}&_include=Observation:subject`,
+                `Observation?code=15074-8&subject=${patient.id}&_include=Observation:subject`,
         });
 
         assertEquals(

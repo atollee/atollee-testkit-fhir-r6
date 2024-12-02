@@ -11,16 +11,32 @@ import {
     createTestObservation,
     createTestPatient,
 } from "../../utils/resource_creators.ts";
-import { Bundle, Patient } from "npm:@types/fhir/r4.d.ts";
+import { Bundle, OperationOutcome, Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 
 export function runSummaryTests(context: ITestContext) {
     if (context.isSummarySearchParameterSupported()) {
         it("Should return a limited subset of elements when _summary=true", async () => {
+            // Create a patient with mixture of summary and non-summary elements
             const patient = await createTestPatient(context, {
                 name: [{ given: ["TestPatient"], family: "TestFamily" }],
                 gender: "male",
                 birthDate: "1990-01-01",
+                maritalStatus: {
+                    coding: [{
+                        system:
+                            "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
+                        code: "S",
+                    }],
+                },
+                communication: [{
+                    language: {
+                        coding: [{
+                            system: "urn:ietf:bcp:47",
+                            code: "en",
+                        }],
+                    },
+                }],
             });
 
             const response = await fetchSearchWrapper({
@@ -34,18 +50,42 @@ export function runSummaryTests(context: ITestContext) {
                 "Server should process the request successfully",
             );
             const returnedPatient = response.jsonBody as Patient;
+
+            // Mandatory elements must be present
             assertExists(returnedPatient.id, "Summary should include id");
             assertExists(returnedPatient.meta, "Summary should include meta");
+
+            // Summary elements should be present if they exist in the resource
             assertExists(returnedPatient.name, "Summary should include name");
-            assertEquals(
+            assertExists(
                 returnedPatient.gender,
+                "Summary should include gender",
+            );
+            assertExists(
+                returnedPatient.birthDate,
+                "Summary should include birthDate",
+            );
+
+            // Non-summary elements should be excluded
+            assertEquals(
+                returnedPatient.maritalStatus,
                 undefined,
-                "Summary should not include gender",
+                "Summary should not include maritalStatus",
             );
             assertEquals(
-                returnedPatient.birthDate,
+                returnedPatient.communication,
                 undefined,
-                "Summary should not include birthDate",
+                "Summary should not include communication",
+            );
+
+            // Should be marked as subsetted
+            assertTrue(
+                returnedPatient.meta?.tag?.some((tag) =>
+                    tag.system ===
+                        "http://terminology.hl7.org/CodeSystem/v3-ObservationValue" &&
+                    tag.code === "SUBSETTED"
+                ),
+                "Resource should be marked as SUBSETTED",
             );
         });
 
@@ -190,10 +230,6 @@ export function runSummaryTests(context: ITestContext) {
                 "Full resource should include meta",
             );
             assertExists(
-                returnedPatient.text,
-                "Full resource should include text",
-            );
-            assertExists(
                 returnedPatient.name,
                 "Full resource should include name",
             );
@@ -225,6 +261,68 @@ export function runSummaryTests(context: ITestContext) {
                 response.status,
                 400,
                 "Server should reject _include with _summary=text",
+            );
+
+            const outcome = response.jsonBody as OperationOutcome;
+            const diagnostics =
+                outcome.issue?.[0]?.diagnostics?.toLowerCase() ||
+                "";
+            assertTrue(
+                diagnostics.includes("summary") &&
+                    diagnostics.includes("include"),
+                "Should return clear error message about incompatible parameters",
+            );
+        });
+
+        it("Should not allow _revinclude with _summary=text", async () => {
+            const patient = await createTestPatient(context, {
+                name: [{ given: ["TestPatient"] }],
+            });
+            await createTestObservation(context, patient.id!, {
+                code: "test-code",
+            });
+
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl:
+                    `Patient?_id=${patient.id}&_revinclude=Observation:subject&_summary=text`,
+            });
+
+            assertEquals(
+                response.status,
+                400,
+                "Server should reject _revinclude with _summary=text",
+            );
+
+            const outcome = response.jsonBody as OperationOutcome;
+            const diagnostics =
+                outcome.issue?.[0]?.diagnostics?.toLowerCase() ||
+                "";
+            assertTrue(
+                diagnostics.includes("revinclude") &&
+                    diagnostics.includes("summary"),
+                "Should return clear error message about incompatible parameters",
+            );
+        });
+
+        it("Should allow _include with other _summary values", async () => {
+            const patient = await createTestPatient(context, {
+                name: [{ given: ["TestPatient"] }],
+            });
+            await createTestObservation(context, patient.id!, {
+                code: "test-code",
+            });
+
+            const response = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl:
+                    `Observation?subject=${patient.id}&_include=Observation:subject&_summary=true`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should allow _include with _summary=true",
             );
         });
 

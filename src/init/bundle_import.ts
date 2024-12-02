@@ -23,7 +23,6 @@ export async function runBundleImportTests(_context: ITestContext): Promise<stri
                     body: JSON.stringify(bundle),
                 });
 
-                console.log(JSON.stringify(response, null, 4));
                 const bundleResponseType = `${bundle.type}-response`;
                 assertEquals(response.status, 200, `Bundle import for ${entry.name} should be successful`);
                 const responseBundle = response.jsonBody as Bundle;

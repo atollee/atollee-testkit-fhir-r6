@@ -6,7 +6,7 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
+import { fetchWrapper } from "../../utils/fetch.ts";
 import {
     createTestMedicationRequest,
     createTestPatient,
@@ -14,10 +14,9 @@ import {
 } from "../../utils/resource_creators.ts";
 import { Bundle, Medication, MedicationRequest } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
-import { Context } from "https://deno.land/x/oak@14.2.0/mod.ts";
 
 export function runContainedResourcesTests(context: ITestContext) {
-    if (context.isHapiBugsDisallowed()) {
+    if (context.isContainedSearchesSupported()) {
         it("Should find MedicationRequest with contained Medication using chained search", async () => {
             const patient = await createTestPatient(
                 context,
@@ -44,7 +43,8 @@ export function runContainedResourcesTests(context: ITestContext) {
 
             const response = await fetchWrapper({
                 authorized: true,
-                relativeUrl: `MedicationRequest?medication.ingredient-code=abc`,
+                relativeUrl:
+                    `MedicationRequest?medication.ingredient-code=${code}`,
             });
 
             assertEquals(
@@ -65,46 +65,12 @@ export function runContainedResourcesTests(context: ITestContext) {
                 "Bundle should contain the correct MedicationRequest",
             );
         });
-    }
 
-    it("Should not find contained Medication when searching directly", async () => {
-        const patient = await createTestPatient(
-            context,
-        );
-        await createTestMedicationRequest(context, patient.id!, {
-            containedMedication: {
-                resourceType: "Medication",
-                id: "m1",
-                ingredient: [{
-                    itemCodeableConcept: {
-                        coding: [{
-                            system: "http://example.org/medications",
-                            code: "abc",
-                        }],
-                    },
-                }],
-            },
-        });
-
-        const response = await fetchSearchWrapper({
-            authorized: true,
-            relativeUrl: `Medication?ingredient-code=abc`,
-        });
-
-        assertEquals(
-            response.status,
-            200,
-            "Server should process the request successfully",
-        );
-        const bundle = response.jsonBody as Bundle;
-        assertEquals(bundle.total, 0, "Bundle should contain no entries");
-    });
-
-    if (context.isContainedSearchesSupported()) {
-        it("Should return contained Medication when using _contained=true and _containedType=contained", async () => {
+        it("Should not find contained Medication when searching directly", async () => {
             const patient = await createTestPatient(
                 context,
             );
+            const code = uniqueString("abc");
             await createTestMedicationRequest(context, patient.id!, {
                 containedMedication: {
                     resourceType: "Medication",
@@ -113,17 +79,51 @@ export function runContainedResourcesTests(context: ITestContext) {
                         itemCodeableConcept: {
                             coding: [{
                                 system: "http://example.org/medications",
-                                code: "abc",
+                                code: code,
                             }],
                         },
                     }],
                 },
             });
 
-            const response = await fetchSearchWrapper({
+            const response = await fetchWrapper({
+                authorized: true,
+                relativeUrl: `Medication?ingredient-code=${code}`,
+            });
+
+            assertEquals(
+                response.status,
+                200,
+                "Server should process the request successfully",
+            );
+            const bundle = response.jsonBody as Bundle;
+            assertEquals(bundle.total, 0, "Bundle should contain no entries");
+        });
+
+        it("Should return contained Medication when using _contained=true and _containedType=contained", async () => {
+            const patient = await createTestPatient(
+                context,
+            );
+            const code = uniqueString("abc");
+            await createTestMedicationRequest(context, patient.id!, {
+                containedMedication: {
+                    resourceType: "Medication",
+                    id: "m1",
+                    ingredient: [{
+                        itemCodeableConcept: {
+                            coding: [{
+                                system: "http://example.org/medications",
+                                code: code,
+                            }],
+                        },
+                    }],
+                },
+            });
+
+            const response = await fetchWrapper({
                 authorized: true,
                 relativeUrl:
-                    `Medication?ingredient-code=abc&_contained=true&_containedType=contained`,
+                    `Medication?ingredient-code=${code}&_contained=true&_containedType=contained`,
             });
 
             assertEquals(
@@ -166,6 +166,8 @@ export function runContainedResourcesTests(context: ITestContext) {
             const patient = await createTestPatient(
                 context,
             );
+            const code = uniqueString("abc");
+
             const medicationRequest = await createTestMedicationRequest(
                 context,
                 patient.id!,
@@ -177,7 +179,7 @@ export function runContainedResourcesTests(context: ITestContext) {
                             itemCodeableConcept: {
                                 coding: [{
                                     system: "http://example.org/medications",
-                                    code: "abc",
+                                    code: code,
                                 }],
                             },
                         }],
@@ -185,10 +187,10 @@ export function runContainedResourcesTests(context: ITestContext) {
                 },
             );
 
-            const response = await fetchSearchWrapper({
+            const response = await fetchWrapper({
                 authorized: true,
                 relativeUrl:
-                    `Medication?ingredient-code=abc&_contained=true&_containedType=container`,
+                    `Medication?ingredient-code=${code}&_contained=true&_containedType=container`,
             });
 
             assertEquals(

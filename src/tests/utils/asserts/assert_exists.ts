@@ -3,6 +3,7 @@ import {
     AssertionError,
 } from "@std/assert";
 import { createAssertion } from "../bdd/assertion.ts";
+import { extractErrorMessage } from "../error.ts";
 
 export function assertExists<T>(
     expr: T,
@@ -17,6 +18,6 @@ export function assertExists<T>(
             msg,
         );
     } catch (error) {
-        throw new AssertionError(error.message);
+        throw new AssertionError(extractErrorMessage(error));
     }
 }

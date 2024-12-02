@@ -4,26 +4,29 @@ import { fetchWrapper } from "../../utils/fetch.ts";
 import { Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { assertEquals, assertExists, assertNotEquals, it } from "../../../../deps.test.ts";
+import { createTestPatient } from "../../utils/resource_creators.ts";
 
 export function runResourceMetadataVersioningTests(context: ITestContext) {
-    const patientId = context.getValidPatientId(); // Use a known patient ID for testing
-
     it("Resource Metadata and Versioning - Logical Id", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
         const response = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient/${patientId}`,
+            relativeUrl: `Patient/${validPatientId}`,
         });
 
         assertEquals(response.success, true, "Request should be successful");
         const patient = response.jsonBody as Patient;
 
-        assertEquals(patient.id, patientId, "Logical Id in the resource should match the Id in the URL");
+        assertEquals(patient.id, validPatientId, "Logical Id in the resource should match the Id in the URL");
     });
 
     it("Resource Metadata and Versioning - Version Id and ETag", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
         const response = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient/${patientId}`,
+            relativeUrl: `Patient/${validPatientId}`,
         });
 
         assertEquals(response.success, true, "Request should be successful");
@@ -41,9 +44,11 @@ export function runResourceMetadataVersioningTests(context: ITestContext) {
     });
 
     it("Resource Metadata and Versioning - Last Modified", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
         const response = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient/${patientId}`,
+            relativeUrl: `Patient/${validPatientId}`,
         });
 
         assertEquals(response.success, true, "Request should be successful");
@@ -58,10 +63,13 @@ export function runResourceMetadataVersioningTests(context: ITestContext) {
     });
 
     it("Resource Metadata and Versioning - Update and Version Change", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
+
         // First, get the current version
         const initialResponse = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient/${patientId}`,
+            relativeUrl: `Patient/${validPatientId}`,
         });
 
         const initialPatient = initialResponse.jsonBody as Patient;
@@ -71,7 +79,7 @@ export function runResourceMetadataVersioningTests(context: ITestContext) {
         const updatedPatient = { ...initialPatient, active: !initialPatient.active };
         const updateResponse = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient/${patientId}`,
+            relativeUrl: `Patient/${validPatientId}`,
             method: "PUT",
             body: JSON.stringify(updatedPatient),
         });
@@ -81,7 +89,7 @@ export function runResourceMetadataVersioningTests(context: ITestContext) {
         // Get the updated version
         const finalResponse = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient/${patientId}`,
+            relativeUrl: `Patient/${validPatientId}`,
         });
 
         const finalPatient = finalResponse.jsonBody as Patient;

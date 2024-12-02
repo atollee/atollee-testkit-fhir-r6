@@ -104,39 +104,4 @@ export function runErrorHandlingEdgeCasesTests(context: ITestContext) {
             }
         }
     });
-
-    /*
-    // server might be crashing
-    it("Should handle a very large number of parameters", async () => {
-        // Generate a URL with a large number of parameters
-        const manyParams = Array.from(
-            { length: 400 },
-            (_, i) => `identifier=value${i}`,
-        ).join("&");
-        const response = await fetchSearchWrapper({
-            authorized: true,
-            relativeUrl: `Patient?${manyParams}`,
-        });
-
-        // The server might impose a limit on the number of parameters and return a 400,
-        // or it might process the request normally
-        if (response.status === 400) {
-            const operationOutcome = response.jsonBody as OperationOutcome;
-            assertTrue(
-                operationOutcome.issue.some((issue) =>
-                    issue.details?.text?.includes("parameters")
-                ),
-                "OperationOutcome should mention issues with the number of parameters",
-            );
-        } else {
-            assertEquals(
-                response.status,
-                200,
-                "Server should return 200 OK if processing the search with many parameters",
-            );
-            const bundle = response.jsonBody as Bundle;
-            assertExists(bundle.total, "Bundle should have a total property");
-        }
-    });
-    */
 }

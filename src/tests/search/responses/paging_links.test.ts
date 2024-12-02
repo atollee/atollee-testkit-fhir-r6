@@ -7,7 +7,10 @@ import {
     it,
 } from "../../../../deps.test.ts";
 import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
-import { createTestPatient } from "../../utils/resource_creators.ts";
+import {
+    createTestObservation,
+    createTestPatient,
+} from "../../utils/resource_creators.ts";
 import { Bundle } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 
@@ -108,7 +111,176 @@ export function runPagingLinksTests(context: ITestContext) {
         }
     });
 
-    // ... (other tests remain the same)
+    it("Should handle _include correctly with pagination", async () => {
+        if (!context.isPaginationSupported()) {
+            console.log(
+                "Pagination is not supported by this server. Skipping test.",
+            );
+            return;
+        }
+
+        const pageSize = context.getDefaultPageSize();
+
+        // Create a patient with multiple observations
+        const patient = await createTestPatient(context, {
+            family: "IncludePaginationTest",
+        });
+
+        // Create observations for the patient
+        const observations = [];
+        for (let i = 0; i < pageSize + 3; i++) {
+            const obs = await createTestObservation(context, patient.id!, {});
+            observations.push(obs);
+        }
+
+        // Search observations with _include
+        const response = await fetchWrapper({
+            authorized: true,
+            relativeUrl:
+                `Observation?subject=${patient.id}&_include=Observation:subject&_count=${pageSize}`,
+        });
+
+        assertEquals(
+            response.success,
+            true,
+            "Search with _include should be successful",
+        );
+
+        const bundle = response.jsonBody as Bundle;
+
+        // Validate included resources
+        const matchEntries = bundle.entry?.filter((e) =>
+            e.search?.mode === "match"
+        );
+        const includeEntries = bundle.entry?.filter((e) =>
+            e.search?.mode === "include"
+        );
+
+        assertExists(matchEntries, "Bundle should contain match entries");
+        assertExists(includeEntries, "Bundle should contain include entries");
+        assertEquals(
+            includeEntries.length,
+            1,
+            "Bundle should include the referenced patient once",
+        );
+
+        // Follow next link
+        const nextLink = bundle.link?.find((link) => link.relation === "next");
+        assertExists(nextLink, "Bundle should contain next link");
+
+        const nextPageResponse = await fetchWrapper({
+            authorized: true,
+            relativeUrl: nextLink.url,
+        });
+
+        assertEquals(
+            nextPageResponse.success,
+            true,
+            "Next page request should be successful",
+        );
+
+        const nextPageBundle = nextPageResponse.jsonBody as Bundle;
+        const nextPageIncludes = nextPageBundle.entry?.filter((e) =>
+            e.search?.mode === "include"
+        );
+
+        assertExists(
+            nextPageIncludes,
+            "Next page should also contain included resources",
+        );
+        assertEquals(
+            nextPageIncludes.length,
+            1,
+            "Next page should include the referenced patient once",
+        );
+    });
+
+    it("Should support both GET and POST for initial search with pagination", async () => {
+        if (!context.isPaginationSupported()) {
+            console.log(
+                "Pagination is not supported by this server. Skipping test.",
+            );
+            return;
+        }
+
+        const pageSize = context.getDefaultPageSize();
+
+        for (let i = 0; i < pageSize + 5; i++) {
+            // Create test data
+            await createTestPatient(context, {
+                family: "PaginationMethodTest",
+            });
+        }
+
+        // Test GET
+        const getResponse = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl:
+                `Patient?family=PaginationMethodTest&_count=${pageSize}`,
+            method: "GET",
+        });
+
+        assertEquals(
+            getResponse.success,
+            true,
+            "GET search should be successful",
+        );
+
+        // Test POST
+        const postResponse = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl: `Patient/_search`,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: `family=PaginationMethodTest&_count=${pageSize}`,
+        });
+
+        assertEquals(
+            postResponse.success,
+            true,
+            "POST search should be successful",
+        );
+
+        const getBundle = getResponse.jsonBody as Bundle;
+        const postBundle = postResponse.jsonBody as Bundle;
+
+        // Validate next links from both methods are GET requests
+        const getNextLink = getBundle.link?.find((link) =>
+            link.relation === "next"
+        );
+        const postNextLink = postBundle.link?.find((link) =>
+            link.relation === "next"
+        );
+
+        assertExists(getNextLink, "GET response should contain next link");
+        assertExists(postNextLink, "POST response should contain next link");
+
+        assertTrue(
+            getNextLink.url.startsWith("http"),
+            "Next link from GET should be absolute URL",
+        );
+        assertTrue(
+            postNextLink.url.startsWith("http"),
+            "Next link from POST should be absolute URL",
+        );
+
+        // Following either next link should work with GET
+        if (getNextLink.url) {
+            const nextPageResponse = await fetchWrapper({
+                authorized: true,
+                relativeUrl: getNextLink.url,
+                method: "GET",
+            });
+
+            assertEquals(
+                nextPageResponse.success,
+                true,
+                "Following next link with GET should succeed",
+            );
+        }
+    });
 
     it("Should be able to follow 'next' link for pagination", async () => {
         if (!context.isPaginationSupported()) {

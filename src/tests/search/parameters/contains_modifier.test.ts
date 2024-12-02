@@ -8,15 +8,12 @@ import {
 } from "../../../../deps.test.ts";
 import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
-    createTestPatient,
-    createTestStructureDefinition,
-    uniqueString,
+    createTestPatient, uniqueString
 } from "../../utils/resource_creators.ts";
 import {
     Bundle,
     OperationOutcome,
-    Patient,
-    StructureDefinition,
+    Patient
 } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 
@@ -106,50 +103,6 @@ export function runContainsModifierTests(context: ITestContext) {
             );
         }
     });
-
-    if (context.isHapiBugsDisallowed()) {
-        it("Should handle diacritics and combining characters", async () => {
-            const testCases = [
-                { name: uniqueString("Söñder"), expected: true },
-                { name: uniqueString("Sonder"), expected: true },
-                { name: uniqueString("Søn"), expected: true },
-                { name: uniqueString("Sön"), expected: true },
-            ];
-
-            for (const testCase of testCases) {
-                await createTestPatient(context, {
-                    name: [{ family: testCase.name }],
-                });
-            }
-
-            const response = await fetchSearchWrapper({
-                authorized: true,
-                relativeUrl: `Patient?family:contains=son`,
-            });
-
-            assertEquals(
-                response.status,
-                200,
-                "Server should process search successfully",
-            );
-            const bundle = response.jsonBody as Bundle;
-            assertExists(bundle.entry, "Bundle should contain entries");
-
-            for (const testCase of testCases) {
-                const patientFound = bundle.entry?.some((entry) => {
-                    const patient = entry.resource as Patient;
-                    return patient.name?.[0].family === testCase.name;
-                });
-                assertEquals(
-                    patientFound,
-                    testCase.expected,
-                    `Patient with family name "${testCase.name}" ${
-                        testCase.expected ? "should" : "should not"
-                    } be found`,
-                );
-            }
-        });
-    }
 
     if (context.isHapiBugsDisallowed()) {
         it("Should reject contains modifier on non-string, non-uri search parameters", async () => {

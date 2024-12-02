@@ -6,7 +6,6 @@ import {
     beforeEach,
     describe,
 } from "../../../deps.test.ts";
-import { CONFIG } from "../config.ts";
 import { runSearchInputTests } from "./base/search_inputs.test.ts";
 import { runSearchContextTests } from "./base/search_contexts.test.ts";
 import { runBundleTypeTests } from "./responses/bundle_type.test.ts";
@@ -40,7 +39,7 @@ import { runIdentifierModifierTests } from "./parameters/identifier_modifier.tes
 import { runIterateModifierTests } from "./parameters/iterate_modifier.test.ts";
 import { runMissingModifierTests } from "./parameters/missing_modifier.test.ts";
 import { runNotModifierTests } from "./parameters/not_modifier.test.ts";
-import { runOfTypeModifierTests } from "./parameters/of_type_modifier.test.ts";
+import { runOfTypeModifierTests } from "./parameters/of_type_modifier.tests.ts";
 import { runNotInModifierTests } from "./parameters/not_in_modifier.test.ts";
 import { runTextModifierReferenceTokenTests } from "./parameters/text_modifier_reference_token.test.ts";
 import { runTextModifierStringTests } from "./parameters/text_modifier_string.test.ts";
@@ -51,9 +50,9 @@ import { runEscapingSearchParametersTests } from "./escaping/escaping_search_par
 import { runDateParameterTests } from "./parameters/date_parameter.test.ts";
 import { runSearchTypesFHIRTypesTests } from "./types/search_types_fhir_types.test.ts";
 import { runNumberSearchTests } from "./parameters/number_search_tests.ts";
-import { runQuantitySearchTests } from "./parameters/quantity_search_tests.ts";
+import { runQuantitySearchTests } from "./parameters/quantity_search.tests.ts";
 import { runStringParameterTests } from "./parameters/string_parameter.test.ts";
-import { runReferenceSearchTests } from "./parameters/reference_search_tests.ts";
+import { runReferenceSearchTests } from "./parameters/reference_search.tests.ts";
 import { runTokenParameterTests } from "./parameters/token_parameter.test.ts";
 import { runUriParameterTests } from "./parameters/uri_parameter.test.ts";
 import {
@@ -107,9 +106,9 @@ import { runResourceSpecificParameterTests } from "./resource_specific/resource_
 import { runTextSearchParameterTests } from "./text_search/text_search_parameters.test.ts";
 import { runServerConformanceTests } from "./conformance/server_conformance.test.ts";
 import { runSearchResultCurrencyTests } from "./currency/search_result_currency.test.ts";
-import { mainDescribe } from "../utils/bdd/mod.ts";
 import { updateRandomText } from "../utils/resource_creators.ts";
 import { createTestContext } from "../utils/testContext.ts";
+import { runPagingMultipleWithIncludesTests } from "./references/paging_multiple_and_includes.ts";
 
 export async function searchSuite(callback: () => void) {
     let accessToken: string | undefined;
@@ -128,7 +127,9 @@ export async function searchSuite(callback: () => void) {
         updateRandomText();
     });
     const testContext: ITestContext = createTestContext(accessToken);
+
     const exclude = false;
+
     if (!exclude) {
         describe("3.2.1.2.2 Search Inputs", () => {
             runSearchInputTests(testContext);
@@ -371,6 +372,7 @@ export async function searchSuite(callback: () => void) {
         });
         describe("3.2.1.7.8.5 Paging and Other Resources", () => {
             runPagingAndIncludesTests(testContext);
+            runPagingMultipleWithIncludesTests(testContext);
         });
         describe("3.2.1.8 Standard Parameters", () => {
             runStandardParametersTests(testContext);

@@ -139,6 +139,7 @@ export function runUriParameterTests(context: ITestContext) {
         await createTestValueSet(context, { url: testValueSetOne });
         await createTestValueSet(context, { url: testValueSetTwo });
 
+        // Test both :above and :below modifiers with URN
         const responseAbove = await fetchSearchWrapper({
             authorized: true,
             relativeUrl:
@@ -151,6 +152,7 @@ export function runUriParameterTests(context: ITestContext) {
                 `ValueSet?url:below=urn:oid:1.2.3.${uniqueNumberValue}`,
         });
 
+        // Server should accept the searches
         assertEquals(
             responseAbove.status,
             200,
@@ -165,15 +167,30 @@ export function runUriParameterTests(context: ITestContext) {
         const bundleAbove = responseAbove.jsonBody as Bundle;
         const bundleBelow = responseBelow.jsonBody as Bundle;
 
+        // Neither should apply hierarchical matching since these are URNs
         assertEquals(
             bundleAbove.entry?.length ?? 0,
             0,
-            "Should not find any ValueSets using :above on URN",
+            "Should not find any ValueSets using :above on URN - modifiers don't apply to URNs",
         );
         assertEquals(
             bundleBelow.entry?.length ?? 0,
-            2,
-            "Should not find any ValueSets using :below on URN",
+            0,
+            "Should not find any ValueSets using :below on URN - modifiers don't apply to URNs",
+        );
+
+        // Verify exact URN matching still works
+        const responseExact = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl: `ValueSet?url=${testValueSetOne}`,
+        });
+
+        assertEquals(responseExact.status, 200);
+        const bundleExact = responseExact.jsonBody as Bundle;
+        assertEquals(
+            bundleExact.entry?.length ?? 0,
+            1,
+            "Exact URN matching should still work",
         );
     });
 

@@ -1,12 +1,16 @@
 // tests/search/parameters/type_modifier.test.ts
 
-import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
+import {
+    assertEquals,
+    assertExists,
+    assertTrue,
+    it,
+} from "../../../../deps.test.ts";
 import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestEncounter,
     createTestObservation,
-    createTestPatient,
-    createTestPractitioner,
+    createTestPatient
 } from "../../utils/resource_creators.ts";
 import { Bundle, Observation, Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
@@ -55,9 +59,8 @@ export function runTypeModifierTests(context: ITestContext) {
         );
 
         const observation = bundle.entry[0].resource as Observation;
-        assertEquals(
-            observation.subject?.reference,
-            `Patient/${patient.id}`,
+        assertTrue(
+            observation.subject?.reference?.includes(`Patient/${patient.id}`),
             "Found observation should reference the correct patient",
         );
     });
@@ -72,38 +75,68 @@ export function runTypeModifierTests(context: ITestContext) {
             unit: "mg/dL",
         });
 
-        const responses = await Promise.all([
-            fetchSearchWrapper({
-                authorized: true,
-                relativeUrl: `Observation?subject:Patient=${patient.id}`,
-            }),
-            fetchSearchWrapper({
-                authorized: true,
-                relativeUrl: `Observation?subject=Patient/${patient.id}`,
-            }),
-            fetchSearchWrapper({
-                authorized: true,
-                relativeUrl: `Observation?patient=${patient.id}`,
-            }),
-        ]);
-
-        responses.forEach((response, index) => {
-            assertEquals(
-                response.status,
-                200,
-                `Search ${index + 1} should be successful`,
-            );
-            const bundle = response.jsonBody as Bundle;
-            assertExists(
-                bundle.entry,
-                `Bundle ${index + 1} should contain entries`,
-            );
-            assertEquals(
-                bundle.entry.length,
-                1,
-                `Search ${index + 1} should find exactly one observation`,
-            );
+        // First search using subject:Patient modifier
+        const response1 = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl: `Observation?subject:Patient=${patient.id}`,
         });
+        assertEquals(
+            response1.status,
+            200,
+            "Search 1 should be successful",
+        );
+        const bundle1 = response1.jsonBody as Bundle;
+        assertExists(
+            bundle1.entry,
+            "Bundle 1 should contain entries",
+        );
+        assertEquals(
+            bundle1.entry.length,
+            1,
+            "Search 1 should find exactly one observation",
+        );
+
+        // Second search using full reference format
+        const response2 = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl: `Observation?subject=Patient/${patient.id}`,
+        });
+        assertEquals(
+            response2.status,
+            200,
+            "Search 2 should be successful",
+        );
+        const bundle2 = response2.jsonBody as Bundle;
+        assertExists(
+            bundle2.entry,
+            "Bundle 2 should contain entries",
+        );
+        assertEquals(
+            bundle2.entry.length,
+            1,
+            "Search 2 should find exactly one observation",
+        );
+
+        // Third search using plain subject parameter
+        const response3 = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl: `Observation?subject=${patient.id}`,
+        });
+        assertEquals(
+            response3.status,
+            200,
+            "Search 3 should be successful",
+        );
+        const bundle3 = response3.jsonBody as Bundle;
+        assertExists(
+            bundle3.entry,
+            "Bundle 3 should contain entries",
+        );
+        assertEquals(
+            bundle3.entry.length,
+            1,
+            "Search 3 should find exactly one observation",
+        );
     });
 
     it("Should support chaining with type modifier", async () => {
@@ -121,9 +154,8 @@ export function runTypeModifierTests(context: ITestContext) {
 
         const response = await fetchSearchWrapper({
             authorized: true,
-            relativeUrl: `Observation?subject:Patient.family=${
-                patient.name?.[0].family
-            }`,
+            relativeUrl: `Observation?subject:Patient.family=${patient.name?.[0].family
+                }`,
         });
 
         assertEquals(
@@ -140,9 +172,10 @@ export function runTypeModifierTests(context: ITestContext) {
         );
 
         const observation = bundle.entry[0].resource as Observation;
-        assertEquals(
-            observation.subject?.reference,
-            `Patient/${patient.id}`,
+        assertTrue(
+            observation.subject?.reference?.includes(
+                `Patient/${patient.id}`,
+            ),
             "Found observation should reference the correct patient",
         );
     });

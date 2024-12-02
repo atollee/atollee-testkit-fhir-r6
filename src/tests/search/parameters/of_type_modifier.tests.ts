@@ -6,14 +6,13 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchSearchWrapper } from "../../utils/fetch.ts";
-import { createTestPatient } from "../../utils/resource_creators.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
+import {
+    createTestPatient,
+    uniqueString,
+} from "../../utils/resource_creators.ts";
 import { Bundle, Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
-
-function uniqueString(base: string): string {
-    return `${base}-${Date.now()}`;
-}
 
 export function runOfTypeModifierTests(context: ITestContext) {
     if (context.isOfTypeModifierSupported()) {
@@ -55,13 +54,13 @@ export function runOfTypeModifierTests(context: ITestContext) {
             const response = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl:
-                    `Patient?identifier:of-type=http://terminology.hl7.org/CodeSystem/v2-0203|MR&identifier=${mrn}`,
+                    `Patient?identifier:of-type=http://terminology.hl7.org/CodeSystem/v2-0203|MR|${mrn}`,
             });
 
             assertEquals(
                 response.status,
                 200,
-                "Server should process search with of-type modifier and identifier value successfully",
+                "Server should process search with of-type modifier successfully",
             );
             const bundle = response.jsonBody as Bundle;
             assertExists(bundle.entry, "Bundle should contain entries");
@@ -71,30 +70,30 @@ export function runOfTypeModifierTests(context: ITestContext) {
                 "Should find exactly one patient with MR identifier and specific value",
             );
 
-            const patient = bundle.entry[0].resource as Patient;
+            // Test that searching with wrong combination doesn't match
+            const wrongValueResponse = await fetchSearchWrapper({
+                authorized: true,
+                relativeUrl:
+                    `Patient?identifier:of-type=http://terminology.hl7.org/CodeSystem/v2-0203|MR|${tempMrn}`,
+            });
+
             assertEquals(
-                patient.id,
-                patientMR.id,
-                "Found patient should match the one created with MR identifier",
+                wrongValueResponse.status,
+                200,
+                "Server should process search with wrong value",
+            );
+            const wrongValueBundle = wrongValueResponse.jsonBody as Bundle;
+            assertEquals(
+                wrongValueBundle.entry?.length,
+                0,
+                "Should not find any patients when searching with wrong identifier value",
             );
 
-            assertTrue(
-                patient.identifier?.some((id) =>
-                    id.type?.coding?.some((coding) =>
-                        coding.system ===
-                            "http://terminology.hl7.org/CodeSystem/v2-0203" &&
-                        coding.code === "MR"
-                    ) &&
-                    id.value === mrn
-                ),
-                "Found patient should have the correct MR identifier",
-            );
-
-            // Test that searching for the wrong type doesn't return results
+            // Test that searching with wrong type doesn't match
             const wrongTypeResponse = await fetchSearchWrapper({
                 authorized: true,
                 relativeUrl:
-                    `Patient?identifier:of-type=http://terminology.hl7.org/CodeSystem/v2-0203|MRT&identifier=${mrn}`,
+                    `Patient?identifier:of-type=http://terminology.hl7.org/CodeSystem/v2-0203|MRT|${mrn}`,
             });
 
             assertEquals(
@@ -107,10 +106,6 @@ export function runOfTypeModifierTests(context: ITestContext) {
                 wrongTypeBundle.entry?.length,
                 0,
                 "Should not find any patients when searching with wrong identifier type",
-            );
-
-            console.log(
-                "Server correctly handled search by identifier type and value",
             );
         });
 
@@ -173,7 +168,7 @@ export function runOfTypeModifierTests(context: ITestContext) {
             });
 
             // Search for patients with MR identifier containing escaped pipe
-            const response = await fetchSearchWrapper({
+            const response = await fetchWrapper({
                 authorized: true,
                 relativeUrl:
                     `Patient?identifier:of-type=http://terminology.hl7.org/CodeSystem/v2-0203|MR|${escapedMrn}`,
