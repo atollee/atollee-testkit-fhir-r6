@@ -1,12 +1,6 @@
 // tests/search/parameters/string_parameter.test.ts
 
-import {
-    assertEquals,
-    assertExists,
-    beforeEach,
-    describe,
-    it,
-} from "../../../../deps.test.ts";
+import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
 import { fetchSearchWrapper } from "../../utils/fetch.ts";
 import {
     createTestPatient,
@@ -366,4 +360,168 @@ export function runStringParameterTests(context: ITestContext) {
             );
         });
     }
+    it("should handle ö/oe replacement in given name", async () => {
+        await createTestPatient(context, {
+            name: [{ given: ["Jörg"], family: "Test" }],
+        });
+        await createTestPatient(context, {
+            name: [{ given: ["Joerg"], family: "Test" }],
+        });
+
+        const response = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl:
+                `Patient?given=joerg&identifier=${getTestPatientCurrentIdentifier()}`,
+        });
+
+        assertEquals(
+            response.status,
+            200,
+            "Server should process search successfully",
+        );
+        const bundle = response.jsonBody as Bundle;
+        assertExists(bundle.entry, "Bundle should contain entries");
+        assertEquals(
+            bundle.entry.length,
+            2,
+            "Should find both 'Jörg' and 'Joerg' variations",
+        );
+    });
+
+    it("should handle ü/ue replacement in family name", async () => {
+        await createTestPatient(context, {
+            name: [{ given: ["Test"], family: "Müller" }],
+        });
+        await createTestPatient(context, {
+            name: [{ given: ["Test"], family: "Mueller" }],
+        });
+
+        const response = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl:
+                `Patient?family=mueller&identifier=${getTestPatientCurrentIdentifier()}`,
+        });
+
+        assertEquals(
+            response.status,
+            200,
+            "Server should process search successfully",
+        );
+        const bundle = response.jsonBody as Bundle;
+        assertExists(bundle.entry, "Bundle should contain entries");
+        assertEquals(
+            bundle.entry.length,
+            2,
+            "Should find both 'Müller' and 'Mueller' variations",
+        );
+    });
+
+    it("should handle ß/ss replacement", async () => {
+        await createTestPatient(context, {
+            name: [{ given: ["Test"], family: "Großmann" }],
+        });
+        await createTestPatient(context, {
+            name: [{ given: ["Test"], family: "Grossmann" }],
+        });
+
+        const response = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl:
+                `Patient?family=grossmann&identifier=${getTestPatientCurrentIdentifier()}`,
+        });
+
+        assertEquals(
+            response.status,
+            200,
+            "Server should process search successfully",
+        );
+        const bundle = response.jsonBody as Bundle;
+        assertExists(bundle.entry, "Bundle should contain entries");
+        assertEquals(
+            bundle.entry.length,
+            2,
+            "Should find both 'Großmann' and 'Grossmann' variations",
+        );
+    });
+
+    it("should handle exact matches with umlauts", async () => {
+        await createTestPatient(context, {
+            name: [{ given: ["Test"], family: "Müller" }],
+        });
+
+        const response = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl:
+                `Patient?family:exact=Müller&identifier=${getTestPatientCurrentIdentifier()}`,
+        });
+
+        assertEquals(
+            response.status,
+            200,
+            "Server should process search successfully",
+        );
+        const bundle = response.jsonBody as Bundle;
+        assertExists(bundle.entry, "Bundle should contain entries");
+        assertEquals(
+            bundle.entry.length,
+            1,
+            "Should only find exact 'Müller' match",
+        );
+    });
+
+    it("should handle contains search with umlauts", async () => {
+        await createTestPatient(context, {
+            name: [{ given: ["Käthe"], family: "Test" }],
+        });
+        await createTestPatient(context, {
+            name: [{ given: ["Kaethe"], family: "Test" }],
+        });
+
+        const response = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl:
+                `Patient?given:contains=kaeth&identifier=${getTestPatientCurrentIdentifier()}`,
+        });
+
+        assertEquals(
+            response.status,
+            200,
+            "Server should process search successfully",
+        );
+        const bundle = response.jsonBody as Bundle;
+        assertExists(bundle.entry, "Bundle should contain entries");
+        assertEquals(
+            bundle.entry.length,
+            2,
+            "Should find both 'Käthe' and 'Kaethe' with contains search",
+        );
+    });
+
+    it("should handle multiple umlauts in one name", async () => {
+        await createTestPatient(context, {
+            name: [{ given: ["Test"], family: "Schröder-Müller" }],
+        });
+        await createTestPatient(context, {
+            name: [{ given: ["Test"], family: "Schroeder-Mueller" }],
+        });
+
+        const response = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl:
+                `Patient?family=schroeder-mueller&identifier=${getTestPatientCurrentIdentifier()}`,
+        });
+
+        assertEquals(
+            response.status,
+            200,
+            "Server should process search successfully",
+        );
+        const bundle = response.jsonBody as Bundle;
+        assertExists(bundle.entry, "Bundle should contain entries");
+        assertEquals(
+            bundle.entry.length,
+            2,
+            "Should find both hyphenated name variations with multiple umlauts",
+        );
+    });
 }

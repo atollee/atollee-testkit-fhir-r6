@@ -74,6 +74,7 @@ export async function createTestEncounter(
         participant: mergedOptions.participant,
         period: mergedOptions.period,
         serviceProvider: mergedOptions.serviceProvider,
+        identifier: mergedOptions.identifier,
     };
 
     // Only add the class property if it's defined

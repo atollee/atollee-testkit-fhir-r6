@@ -1,3 +1,4 @@
+import { Bundle } from "npm:@types/fhir";
 import { CONFIG } from "../config.ts";
 import { IFetchOptions, IFetchResponse, ITestContext } from "../types.ts";
 import { recordHttpInteraction } from "./bdd/mod.ts";
@@ -110,6 +111,7 @@ export async function fetchWrapper(
                 console.error(responseData.rawBody);
             }
         }
+        
         return responseData;
     } catch (error) {
         const errorResponse = {

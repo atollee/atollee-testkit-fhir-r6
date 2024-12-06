@@ -1,17 +1,19 @@
 import { Config } from "./types.ts";
 
-const debug = true;
-const ory = false;
-const hapi = false;
-
 const TRACE_FETCH_CALLS = false;
 const DEBUG_FETCH_CALLS = true;
-/*
-// hapi
-const debug = false;
-const ory = false;
-const hapi = true;
-*/
+
+enum ConfigEnvironment {
+    DEBUG = "debug",
+    ORY = "ory",
+    PROD = "prod",
+    HAPI = "hapi",
+    REMOTE_HAPI = "remoteHapi",
+    BLAZE = "blaze",
+}
+
+const CONFIG_ENV: ConfigEnvironment = ConfigEnvironment.DEBUG;
+
 const debugConfig: Config = {
     clientId: "SAMPLE_CONFIDENTIAL_CLIENT_ID",
     clientSecret: "bu0WRo3HRiybq0bdw4YdMSR4lzu3paj3",
@@ -46,8 +48,8 @@ const prodConfig: Config = {
     clientSecret: "AMwVlN6ZPP9NcMgiqfr9307A0KQuq97N",
     scope: "patient/*.read patient/*.write launch/patient",
     redirectUri: "http://localhost:3000/callback",
-    authServerUrl: "https://test2.atollee.com",
-    fhirServerUrl: "https://test2.atollee.com",
+    authServerUrl: "https://dev.atollee.com",
+    fhirServerUrl: "https://dev.atollee.com",
     validPatientId: "355",
     writableValidPatientId: "88",
     xmlSupported: false,
@@ -244,13 +246,8 @@ const remoteHapiConfig: Config = {
     traceFetchCalls: false,
     debugFetchCalls: DEBUG_FETCH_CALLS,
 };
-/*
-export const CONFIG = hapi
-    ? hapiConfig
-    : (debug ? debugConfig : (ory ? oryConfig : prodConfig));
-*/
 
-export const CONFIG: Config = {
+const blazeConfig: Config = {
     clientId: "e15fa4f4-6f41-417b-ae8e-c8dd977cdf92",
     clientSecret: "UwAy8gFmrbn~-bWiL9A86g-sHr",
     scope: "patient/*.read patient/*.write launch/patient",
@@ -270,56 +267,32 @@ export const CONFIG: Config = {
     paginationSupported: true,
     userName: "admin",
     password: "password",
-    bundleTotalMandatory: false,
-    textContentSearchSupported: false,
-    multiTypeSupported: false,
-    lenientSearchHandlingSupported: false,
-    emptyParametersAllowed: false,
-    paginationFirstRelationLinkSupported: false,
-    paginationNextRelationLinkSupported: false,
-    enforceDisallowingMultipleModifiers: false,
-    locationAboveModifierSupported: false,
-    canonicalUrlAboveModifierSupported: false,
-    semverVersionComparisonSupported: false,
-    hapiBugsDisallowed: false,
-    aboveModifierOnSnomedCodeSystemsSupported: false,
-    locationBelowModifierSupported: false,
-    belowModifierOnSnomedCodeSystemsSupported: false,
-    canonicalUrlBelowModifierSupported: false,
-    belowModifierOnMimeTypesSupported: false,
-    identifierCanonicalSearchSupported: false,
-    identifierReferenceSearchSupported: false,
-    notInModifierSnomedSystemSupported: false,
-    ofTypeModifierSupported: false,
-    fullTextSearchSupported: false,
-    externalReferencesAllowed: false,
-    showFetchResponses: false,
-    approximateSearchSupported: false,
-    locationContainsParameterSupported: false,
-    locationNearParameterSupported: false,
-    compositionSectionTextParameterSupported: false,
-    rejectSearchWithAmbiguousResourceTypesSupported: false,
-    hasForChainedSearchesSupported: false,
-    recordFetchFailures: false,
-    filterContainsOperatorSupported: false,
-    multipleResourceTypeSearchSupported: false,
-    implicitCodeSystemSearchSupported: false,
-    expandOperationSupported: false,
-    summarySearchParameterSupported: false,
-    elementSearchParameterSupported: false,
-    maxResultsSearchParameterSupported: false,
-    relevantSortSupported: false,
-    graphSearchParameterSupported: false,
-    containedSearchesSupported: false,
-    languageSearchParameterSupported: false,
-    querySearchParameterSupported: false,
-    sourceSearchParameterSupported: false,
-    namedListSearchParameterSupported: false,
-    ignoringUnknownParameters: false,
     serverTimeZone: "Europe/Berlin",
-    absoluteUrlReferencesSupported: false,
-    identifierModifierSupported: false,
-    transactionSupported: false,
-    traceFetchCalls: false,
+    approximateSearchSupported: true,
+    approximitySearchRange: 10,
+    searchParameterCaseInsensitiveSupported: true,
+    transactionSupported: true,
+    traceFetchCalls: TRACE_FETCH_CALLS,
     debugFetchCalls: DEBUG_FETCH_CALLS,
-}
+};
+
+const determineConfig: (env: ConfigEnvironment) => Config = (env) => {
+    switch (env) {
+        case "debug":
+            return debugConfig;
+        case "ory":
+            return oryConfig;
+        case "prod":
+            return prodConfig;
+        case "hapi":
+            return hapiConfig;
+        case "remoteHapi":
+            return remoteHapiConfig;
+        case "blaze":
+            return blazeConfig;
+    }
+
+    return debugConfig;
+};
+
+export const CONFIG = determineConfig(CONFIG_ENV);

@@ -6,6 +6,7 @@ import {
     beforeEach,
     describe,
 } from "../../../deps.test.ts";
+import { runSearchBaseTests } from "./base/search_base.test.ts";
 import { runSearchInputTests } from "./base/search_inputs.test.ts";
 import { runSearchContextTests } from "./base/search_contexts.test.ts";
 import { runBundleTypeTests } from "./responses/bundle_type.test.ts";
@@ -131,6 +132,9 @@ export async function searchSuite(callback: () => void) {
     const exclude = false;
 
     if (!exclude) {
+        describe("3.2.1 Search", () => {
+            runSearchBaseTests(testContext);
+        });
         describe("3.2.1.2.2 Search Inputs", () => {
             runSearchInputTests(testContext);
         });
