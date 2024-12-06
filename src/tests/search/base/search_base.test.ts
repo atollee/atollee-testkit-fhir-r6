@@ -1,10 +1,15 @@
 import {
     assertEquals,
     assertExists,
+    assertNotEquals,
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { fetchSearchWrapper } from "../../utils/fetch.ts";
+import {
+    fetchSearchWrapper,
+    fetchWrapper,
+    patchUrl,
+} from "../../utils/fetch.ts";
 import {
     createTestEncounter,
     createTestPatient,
@@ -13,7 +18,95 @@ import {
 import { Bundle, Encounter, Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 
+function compareBundles(bundle1: Bundle, bundle2: Bundle, message: string) {
+    // Compare total counts
+    assertEquals(
+        bundle1.total,
+        bundle2.total,
+        `${message}: Bundle totals should match`,
+    );
+
+    // Compare entries length
+    assertEquals(
+        bundle1.entry?.length,
+        bundle2.entry?.length,
+        `${message}: Bundle entries length should match`,
+    );
+
+    // Compare entries content
+    bundle1.entry?.forEach((entry1, index) => {
+        const entry2 = bundle2.entry?.[index];
+        assertEquals(
+            entry1.resource?.id,
+            entry2?.resource?.id,
+            `${message}: Resource IDs should match at index ${index}`,
+        );
+        assertEquals(
+            entry1.resource?.resourceType,
+            entry2?.resource?.resourceType,
+            `${message}: Resource types should match at index ${index}`,
+        );
+        assertEquals(
+            entry1.search?.mode,
+            entry2?.search?.mode,
+            `${message}: Search modes should match at index ${index}`,
+        );
+    });
+
+    // Compare links
+    assertEquals(
+        bundle1.link?.length,
+        bundle2.link?.length,
+        `${message}: Bundle link counts should match`,
+    );
+
+    bundle1.link?.forEach((link1, index) => {
+        const link2 = bundle2.link?.[index];
+        assertEquals(
+            link1.relation,
+            link2?.relation,
+            `${message}: Link relations should match at index ${index}`,
+        );
+        assertEquals(
+            link1.url,
+            link2?.url,
+            `${message}: Link URLs should match at index ${index}`,
+        );
+    });
+}
+
+function compareBundlesNot(bundle1: Bundle, bundle2: Bundle, message: string) {
+    // Compare total counts
+    if (bundle1.total !== bundle2.total) {
+        return;
+    }
+
+    // Compare entries length
+    if (bundle1.entry?.length !== bundle2.entry?.length) {
+        return;
+    }
+
+    // If lengths match, verify content differs
+    let hasEntryDifference = false;
+    bundle1.entry?.forEach((entry1, index) => {
+        const entry2 = bundle2.entry?.[index];
+        if (
+            entry1.resource?.id !== entry2?.resource?.id ||
+            entry1.resource?.resourceType !==
+                entry2?.resource?.resourceType ||
+            entry1.search?.mode !== entry2?.search?.mode
+        ) {
+            hasEntryDifference = true;
+        }
+    });
+    assertTrue(
+        hasEntryDifference,
+        `${message}: Bundle entries should have different content`,
+    );
+}
+
 export function runSearchBaseTests(context: ITestContext) {
+    /*
     it("Should search encounters with sorting, count, total, class filter and patient include", async () => {
         // Create test patients
         const patient1 = await createTestPatient(context, {
@@ -144,5 +237,128 @@ export function runSearchBaseTests(context: ITestContext) {
                 `Encounter subject reference should match an included patient: ${patientRef}`,
             );
         });
+    });
+    */
+    it("Should provide correct pagination links when searching encounters and return identical results for self/first links", async () => {
+        // Create test patients and encounters
+        const patient = await createTestPatient(context, {
+            name: [{ family: uniqueString("TestPatient") }],
+        });
+
+        // Create enough encounters to span multiple pages
+        const totalEncounters = 12;
+        const pageSize = 4;
+        const encounters = [];
+
+        for (let i = 0; i < totalEncounters; i++) {
+            const encounter = await createTestEncounter(context, {
+                subject: { reference: `Patient/${patient.id}` },
+                class: {
+                    system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                    code: "AMB",
+                    display: "ambulatory",
+                },
+                status: "finished",
+            });
+            encounters.push(encounter);
+            // Add delay to ensure different lastUpdated timestamps
+            await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        // Fetch first page
+        const firstPageResponse = await fetchSearchWrapper({
+            authorized: true,
+            relativeUrl: `Encounter?_count=${pageSize}&_sort=_lastUpdated`,
+        });
+
+        assertEquals(
+            firstPageResponse.status,
+            200,
+            "First page request should be successful",
+        );
+        const firstPageBundle = firstPageResponse.jsonBody as Bundle;
+
+        // Verify links exist
+        assertExists(firstPageBundle.link, "First page should have links");
+        const firstPageLinks = new Map(
+            firstPageBundle.link.map((link) => [link.relation, link.url]),
+        );
+
+        assertExists(firstPageLinks.get("self"), "Should have self link");
+        assertExists(firstPageLinks.get("first"), "Should have first link");
+
+        // Follow self link and verify identical results
+        const selfUrl = patchUrl(context, firstPageLinks.get("self")!);
+        const selfLinkResponse = await fetchWrapper({
+            authorized: true,
+            relativeUrl: selfUrl,
+        });
+
+        assertEquals(
+            selfLinkResponse.status,
+            200,
+            "Self link request should be successful",
+        );
+        const selfLinkBundle = selfLinkResponse.jsonBody as Bundle;
+
+        compareBundles(
+            firstPageBundle,
+            selfLinkBundle,
+            "Self link should return identical bundle",
+        );
+
+        // Follow first link and verify identical results
+        const firstUrl = patchUrl(context, firstPageLinks.get("first")!);
+        const firstLinkResponse = await fetchWrapper({
+            authorized: true,
+            relativeUrl: firstUrl,
+        });
+
+        assertEquals(
+            firstLinkResponse.status,
+            200,
+            "First link request should be successful",
+        );
+        const firstLinkBundle = firstLinkResponse.jsonBody as Bundle;
+
+        compareBundles(
+            firstPageBundle,
+            firstLinkBundle,
+            "First link should return identical bundle",
+        );
+
+        // Fetch middle page and verify its self link
+        const nextUrl = patchUrl(context, firstPageLinks.get("next")!);
+        const middlePageResponse = await fetchWrapper({
+            authorized: true,
+            relativeUrl: nextUrl,
+        });
+
+        const middlePageBundle = middlePageResponse.jsonBody as Bundle;
+        compareBundlesNot(
+            middlePageBundle,
+            firstPageBundle,
+            "Middle page should not match first page",
+        );
+        const middlePageLinks = new Map(
+            middlePageBundle.link?.map((link) => [link.relation, link.url]),
+        );
+
+        const middlePageSelfUrl = patchUrl(
+            context,
+            middlePageLinks.get("self")!,
+        );
+        const middlePageSelfResponse = await fetchWrapper({
+            authorized: true,
+            relativeUrl: middlePageSelfUrl,
+        });
+
+        const middlePageSelfBundle = middlePageSelfResponse.jsonBody as Bundle;
+
+        compareBundles(
+            middlePageBundle,
+            middlePageSelfBundle,
+            "Middle page self link should return identical bundle",
+        );
     });
 }

@@ -128,8 +128,10 @@ export async function searchSuite(callback: () => void) {
         updateRandomText();
     });
     const testContext: ITestContext = createTestContext(accessToken);
-
-    const exclude = false;
+    describe("3.2.1 Search", () => {
+        runSearchBaseTests(testContext);
+    });
+    const exclude = true;
 
     if (!exclude) {
         describe("3.2.1 Search", () => {

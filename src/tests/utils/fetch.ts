@@ -27,7 +27,7 @@ export async function fetchWrapper(
     } else if (CONFIG.debugFetchCalls) {
         logLevel = "debug";
     }
-    if (logLevel) {
+    if (logLevel && relativeTargetUrl.indexOf("_loglevel") === -1) {
         if (relativeTargetUrl.indexOf("?") !== -1) {
             relativeTargetUrl += "&_loglevel=" + logLevel;
         } else {
@@ -111,7 +111,7 @@ export async function fetchWrapper(
                 console.error(responseData.rawBody);
             }
         }
-        
+
         return responseData;
     } catch (error) {
         const errorResponse = {
