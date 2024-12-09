@@ -131,311 +131,304 @@ export async function searchSuite(callback: () => void) {
     describe("3.2.1 Search", () => {
         runSearchBaseTests(testContext);
     });
-    const exclude = true;
+    describe("3.2.1.2.2 Search Inputs", () => {
+        runSearchInputTests(testContext);
+    });
 
-    if (!exclude) {
-        describe("3.2.1 Search", () => {
-            runSearchBaseTests(testContext);
-        });
-        describe("3.2.1.2.2 Search Inputs", () => {
-            runSearchInputTests(testContext);
-        });
+    describe("3.2.1.2.3 Search Contexts", () => {
+        runSearchContextTests(testContext);
+    });
 
-        describe("3.2.1.2.3 Search Contexts", () => {
-            runSearchContextTests(testContext);
-        });
+    describe("3.2.1.3.1 Bundle Type", () => {
+        runBundleTypeTests(testContext);
+    });
 
-        describe("3.2.1.3.1 Bundle Type", () => {
-            runBundleTypeTests(testContext);
-        });
+    describe("3.2.1.3.2 Self Link - Understanding a Performed Search", () => {
+        runSelfLinkTests(testContext);
+    });
 
-        describe("3.2.1.3.2 Self Link - Understanding a Performed Search", () => {
-            runSelfLinkTests(testContext);
-        });
+    describe("3.2.1.3.3 Other Links - Paging", () => {
+        runPagingLinksTests(testContext);
+    });
 
-        describe("3.2.1.3.3 Other Links - Paging", () => {
-            runPagingLinksTests(testContext);
-        });
+    describe("3.2.1.3.4 Matches, Inclusions, and Outcomes - Bundle Entries", () => {
+        runBundleEntriesTests(testContext);
+    });
+    describe("3.2.1.3.5 Handling Errors", () => {
+        runErrorHandlingBaseTests(testContext);
+        runErrorHandlingResourcesTests(testContext);
+        runErrorHandlingContentIssuesTests(testContext);
+        runErrorHandlingEdgeCasesTests(testContext);
+    });
+    describe("3.2.1.4.2 Batching Search Requests", () => {
+        runBatchedSearchTests(testContext);
+    });
 
-        describe("3.2.1.3.4 Matches, Inclusions, and Outcomes - Bundle Entries", () => {
-            runBundleEntriesTests(testContext);
-        });
-        describe("3.2.1.3.5 Handling Errors", () => {
-            runErrorHandlingBaseTests(testContext);
-            runErrorHandlingResourcesTests(testContext);
-            runErrorHandlingContentIssuesTests(testContext);
-            runErrorHandlingEdgeCasesTests(testContext);
-        });
-        describe("3.2.1.4.2 Batching Search Requests", () => {
-            runBatchedSearchTests(testContext);
-        });
+    describe("3.2.1.5 Search Parameters", () => {
+        runSearchParameterTypeTests(testContext);
+    });
 
-        describe("3.2.1.5 Search Parameters", () => {
-            runSearchParameterTypeTests(testContext);
-        });
+    describe("3.2.1.5.1 Search Test Basics", () => {
+        runSearchTestBasicsTests(testContext);
+    });
 
-        describe("3.2.1.5.1 Search Test Basics", () => {
-            runSearchTestBasicsTests(testContext);
-        });
+    describe("3.2.1.5.2 Matching and Cardinality", () => {
+        runMatchingAndCardinalityTests(testContext);
+    });
 
-        describe("3.2.1.5.2 Matching and Cardinality", () => {
-            runMatchingAndCardinalityTests(testContext);
-        });
+    describe("3.2.1.5.3 Matching and Sub-Elements", () => {
+        runMatchingAndSubElementsTests(testContext);
+    });
+    describe("3.2.1.5.4 Searching Multiple Values", () => {
+        runSearchingMultipleValuesTests(testContext);
+        runJoiningMultipleValuesTests(testContext);
+    });
 
-        describe("3.2.1.5.3 Matching and Sub-Elements", () => {
-            runMatchingAndSubElementsTests(testContext);
-        });
-        describe("3.2.1.5.4 Searching Multiple Values", () => {
-            runSearchingMultipleValuesTests(testContext);
-            runJoiningMultipleValuesTests(testContext);
-        });
+    describe("3.2.1.5.5 Modifiers", () => {
+        runModifiersTests(testContext);
+    });
+    describe("3.2.1.5.5.1.1 above with reference type search parameters", () => {
+        runAboveModifierReferenceTests(testContext);
+    });
+    describe("3.2.1.5.5.1.2 above with canonical references", () => {
+        runAboveModifierCanonicalTests(testContext);
+    });
+    describe("3.2.1.5.5.1.3 above with token type search parameters", () => {
+        runAboveModifierTokenTests(testContext);
+    });
+    describe("3.2.1.5.5.1.4 above with uri type search parameters", () => {
+        runAboveModifierUriTests(testContext);
+    });
 
-        describe("3.2.1.5.5 Modifiers", () => {
-            runModifiersTests(testContext);
-        });
-        describe("3.2.1.5.5.1.1 above with reference type search parameters", () => {
-            runAboveModifierReferenceTests(testContext);
-        });
-        describe("3.2.1.5.5.1.2 above with canonical references", () => {
-            runAboveModifierCanonicalTests(testContext);
-        });
-        describe("3.2.1.5.5.1.3 above with token type search parameters", () => {
-            runAboveModifierTokenTests(testContext);
-        });
-        describe("3.2.1.5.5.1.4 above with uri type search parameters", () => {
-            runAboveModifierUriTests(testContext);
-        });
+    describe("3.2.1.5.5.2.1 below with reference type search parameters - hierarchical searches", () => {
+        runBelowModifierReferenceHierarchicalTests(testContext);
+    });
+    describe("3.2.1.5.5.2.2 below with canonical references", () => {
+        runBelowModifierCanonicalTests(testContext);
+    });
+    describe("3.2.1.5.5.2.3 below with token type search parameters", () => {
+        runBelowModifierTokenTests(testContext);
+    });
 
-        describe("3.2.1.5.5.2.1 below with reference type search parameters - hierarchical searches", () => {
-            runBelowModifierReferenceHierarchicalTests(testContext);
-        });
-        describe("3.2.1.5.5.2.2 below with canonical references", () => {
-            runBelowModifierCanonicalTests(testContext);
-        });
-        describe("3.2.1.5.5.2.3 below with token type search parameters", () => {
-            runBelowModifierTokenTests(testContext);
-        });
+    describe("3.2.1.5.5.2.4 below with uri type search parameters", () => {
+        runBelowModifierUriTests(testContext);
+    });
+    describe("3.2.1.5.5.3 code-text modifier", () => {
+        runCodeTextModifierTests(testContext);
+    });
+    describe("3.2.1.5.5.4 contains modifier", () => {
+        runContainsModifierTests(testContext);
+    });
+    describe("3.2.1.5.5.5 exact modifier", () => {
+        runExactModifierTests(testContext);
+    });
+    describe("3.2.1.5.5.6 identifier modifier", () => {
+        runIdentifierModifierTests(testContext);
+    });
+    describe("3.2.1.5.5.8 iterate modifier", () => {
+        runIterateModifierTests(testContext);
+    });
+    describe("3.2.1.5.5.9 missing modifier", () => {
+        runMissingModifierTests(testContext);
+    });
+    describe("3.2.1.5.5.10 not modifier", () => {
+        runNotModifierTests(testContext);
+    });
+    describe("3.2.1.5.5.11 not-in modifier", () => {
+        runNotInModifierTests(testContext);
+    });
+    describe("3.2.1.5.5.12 of-type modifier", () => {
+        runOfTypeModifierTests(testContext);
+    });
+    describe("3.2.1.5.5.13 text modifier with reference or token type search parameters", () => {
+        runTextModifierReferenceTokenTests(testContext);
+    });
+    describe("3.2.1.5.5.14 text modifier with string type search parameters", () => {
+        runTextModifierStringTests(testContext);
+    });
+    describe("3.2.1.5.5.15 text-advanced modifier", () => {
+        runTextAdvancedModifierTests(testContext);
+    });
+    describe("3.2.1.5.5.16 [type] modifier", () => {
+        runTypeModifierTests(testContext);
+    });
+    describe("3.2.1.5.6 Prefixes", () => {
+        runPrefixTests(testContext);
+    });
 
-        describe("3.2.1.5.5.2.4 below with uri type search parameters", () => {
-            runBelowModifierUriTests(testContext);
-        });
-        describe("3.2.1.5.5.3 code-text modifier", () => {
-            runCodeTextModifierTests(testContext);
-        });
-        describe("3.2.1.5.5.4 contains modifier", () => {
-            runContainsModifierTests(testContext);
-        });
-        describe("3.2.1.5.5.5 exact modifier", () => {
-            runExactModifierTests(testContext);
-        });
-        describe("3.2.1.5.5.6 identifier modifier", () => {
-            runIdentifierModifierTests(testContext);
-        });
-        describe("3.2.1.5.5.8 iterate modifier", () => {
-            runIterateModifierTests(testContext);
-        });
-        describe("3.2.1.5.5.9 missing modifier", () => {
-            runMissingModifierTests(testContext);
-        });
-        describe("3.2.1.5.5.10 not modifier", () => {
-            runNotModifierTests(testContext);
-        });
-        describe("3.2.1.5.5.11 not-in modifier", () => {
-            runNotInModifierTests(testContext);
-        });
-        describe("3.2.1.5.5.12 of-type modifier", () => {
-            runOfTypeModifierTests(testContext);
-        });
-        describe("3.2.1.5.5.13 text modifier with reference or token type search parameters", () => {
-            runTextModifierReferenceTokenTests(testContext);
-        });
-        describe("3.2.1.5.5.14 text modifier with string type search parameters", () => {
-            runTextModifierStringTests(testContext);
-        });
-        describe("3.2.1.5.5.15 text-advanced modifier", () => {
-            runTextAdvancedModifierTests(testContext);
-        });
-        describe("3.2.1.5.5.16 [type] modifier", () => {
-            runTypeModifierTests(testContext);
-        });
-        describe("3.2.1.5.6 Prefixes", () => {
-            runPrefixTests(testContext);
-        });
-        // ---
-        describe("3.2.1.5.7 Escaping Search Parameters", () => {
-            runEscapingSearchParametersTests(testContext);
-        });
-        describe("3.2.1.5.8 Search Types and FHIR Types", () => {
-            runSearchTypesFHIRTypesTests(testContext);
-        });
-        describe("3.2.1.5.9 Date Parameter", () => {
-            runDateParameterTests(testContext);
-        });
-        describe("3.2.1.5.10 Number Search Parameter", () => {
-            runNumberSearchTests(testContext);
-        });
-        describe("3.2.1.5.11 Quantity Search Parameter", () => {
-            runQuantitySearchTests(testContext);
-        });
-        describe("3.2.1.5.12 Reference Search Parameter", () => {
-            runReferenceSearchTests(testContext);
-        });
-        describe("3.2.1.5.13 String Parameter", () => {
-            runStringParameterTests(testContext);
-        });
-        describe("3.2.1.5.14 Token Parameter", () => {
-            runTokenParameterTests(testContext);
-        });
-        describe("3.2.1.5.15 URI Parameter", () => {
-            runUriParameterTests(testContext);
-        });
-        describe("3.2.1.5.16 Special Parameters", () => {
-            runSpecialParameterTests(testContext);
-        });
-        describe("3.2.1.6.1 Searching Identifiers", () => {
-            runSearchingIdentifiersTests(testContext);
-        });
-        describe("3.2.1.6.1.1 Logical Identifiers", () => {
-            runLogicalIdentifiersTests(testContext);
-        });
-        describe("3.2.1.6.1.2 Searching by Membership", () => {
-            runSearchingByMembershipTests(testContext);
-        });
-        describe("3.2.1.6.1.3 Identifiers and References", () => {
-            runIdentifiersAndReferencesTests(testContext);
-        });
-        describe("3.2.1.6.1.4 Canonical Identifiers", () => {
-            runCanonicalIdentifiersTests(testContext);
-        });
-        describe("3.2.1.6.1.5 Canonical Identifiers", () => {
-            runCanonicalIdentifiersAddonTests(testContext);
-        });
-        describe("3.2.1.6.2 References and Versions", () => {
-            runReferencesAndVersionsTests(testContext);
-        });
-        describe("3.2.1.6.3 Searching Hierarchies", () => {
-            runHierarchicalSearchTests(testContext);
-        });
-        describe("3.2.1.6.4 Searching MIME Types", () => {
-            runMimeTypeSearchTests(testContext);
-        });
-        describe("3.2.1.6.5 Chaining (chained parameters)", () => {
-            runChainedParametersTests(testContext);
-        });
-        describe("3.2.1.6.6 Reverse Chaining", () => {
-            runReverseChainedParametersTests(testContext);
-        });
-        describe("3.2.1.6.7 Handling Missing Data", () => {
-            runHandlingMissingDataTests(testContext);
-        });
-        describe("3.2.1.6.8 Advanced filtering", () => {
-            runAdvancedFilteringTests(testContext);
-        });
-        describe("3.2.1.6.9 Searching Multiple Resource Types", () => {
-            runSearchingMultipleResourceTypesTests(testContext);
-        });
-        describe("3.2.1.6.10 Implicit Resources", () => {
-            runImplicitResourcesTests(testContext);
-        });
-        describe("3.2.1.6.11 Named Queries", () => {
-            runNamedQueriesTests(testContext);
-        });
-        describe("3.2.1.7 Modifying Search Results", () => {
-            runModifyingSearchResultsTests(testContext);
-        });
-        describe("3.2.1.7.1 Sorting (_sort)", () => {
-            runSortingTests(testContext);
-        });
-        describe("3.2.1.7.2 Total number of matching resources (_total)", () => {
-            runTotalCountTests(testContext);
-        });
-        describe("3.2.1.7.3 Limiting Page Size (_count)", () => {
-            runPageSizeTests(testContext);
-        });
-        describe("3.2.1.7.4 Limiting Total Result Size (_maxresults)", () => {
-            runMaxResultsTests(testContext);
-        });
-        describe("3.2.1.7.5 Summary (_summary)", () => {
-            runSummaryTests(testContext);
-        });
-        describe("3.2.1.7.6 Elements (_elements)", () => {
-            runElementsTests(testContext);
-        });
-        describe("3.2.1.7.7 Relevance (_score)", () => {
-            runRelevanceScoreTests(testContext);
-        });
-        describe("3.2.1.7.8.1 Inline Requests (_include and _revinclude)", () => {
-            runIncludeRevincludeTests(testContext);
-        });
-        describe("3.2.1.7.8.2 External References", () => {
-            runExternalReferencesTests(testContext);
-        });
-        describe("3.2.1.7.8.3 Graph Definitions (_graph)", () => {
-            runGraphDefinitionTests(testContext);
-        });
-        describe("3.2.1.7.8.4 Contained Resources (_contained)", () => {
-            runContainedResourcesTests(testContext);
-        });
-        describe("3.2.1.7.8.5 Paging and Other Resources", () => {
-            runPagingAndIncludesTests(testContext);
-            runPagingMultipleWithIncludesTests(testContext);
-        });
-        describe("3.2.1.8 Standard Parameters", () => {
-            runStandardParametersTests(testContext);
-        });
-        describe("3.2.1.8.1 Parameters for all resources", () => {
-            runAllResourceParametersTests(testContext);
-        });
-        describe("3.2.1.8.1.1 _content", () => {
-            runContentParameterTests(testContext);
-        });
-        describe("3.2.1.8.1.2 _has", () => {
-            runHasParameterTests(testContext);
-        });
-        describe("3.2.1.8.1.3 _id", () => {
-            runIdParameterTests(testContext);
-        });
-        describe("3.2.1.8.1.5 _language", () => {
-            runLanguageParameterTests(testContext);
-        });
-        describe("3.2.1.8.1.6 _lastUpdated", () => {
-            runLastUpdatedParameterTests(testContext);
-        });
-        describe("3.2.1.8.1.7 _list", () => {
-            runListParameterTests(testContext);
-        });
-        describe("3.2.1.8.1.8 _profile", () => {
-            runProfileParameterTests(testContext);
-        });
-        describe("3.2.1.8.1.9 _query", () => {
-            runQueryParameterTests(testContext);
-        });
-        describe("3.2.1.8.1.10 _security", () => {
-            runSecurityParameterTests(testContext);
-        });
-        describe("3.2.1.8.1.11 _source", () => {
-            runSourceParameterTests(testContext);
-        });
-        describe("3.2.1.8.1.12 _tag", () => {
-            runTagParameterTests(testContext);
-        });
-        describe("3.2.1.8.1.13 _text", () => {
-            runTextParameterTests(testContext);
-        });
-        describe("3.2.1.8.1.14 _type", () => {
-            runTypeParameterTests(testContext);
-        });
-        describe("3.2.1.8.2 Parameters for each resource", () => {
-            runResourceSpecificParameterTests(testContext);
-        });
-        describe("3.2.1.8.3 Text Search Parameters", () => {
-            runTextSearchParameterTests(testContext);
-        });
-        describe("3.2.1.9 Server Conformance", () => {
-            runServerConformanceTests(testContext);
-        });
-        describe("3.2.1.10 Search Result Currency", () => {
-            runSearchResultCurrencyTests(testContext);
-        });
-    }
+    describe("3.2.1.5.7 Escaping Search Parameters", () => {
+        runEscapingSearchParametersTests(testContext);
+    });
+    describe("3.2.1.5.8 Search Types and FHIR Types", () => {
+        runSearchTypesFHIRTypesTests(testContext);
+    });
+    describe("3.2.1.5.9 Date Parameter", () => {
+        runDateParameterTests(testContext);
+    });
+    describe("3.2.1.5.10 Number Search Parameter", () => {
+        runNumberSearchTests(testContext);
+    });
+    describe("3.2.1.5.11 Quantity Search Parameter", () => {
+        runQuantitySearchTests(testContext);
+    });
+    describe("3.2.1.5.12 Reference Search Parameter", () => {
+        runReferenceSearchTests(testContext);
+    });
+    describe("3.2.1.5.13 String Parameter", () => {
+        runStringParameterTests(testContext);
+    });
+    describe("3.2.1.5.14 Token Parameter", () => {
+        runTokenParameterTests(testContext);
+    });
+    describe("3.2.1.5.15 URI Parameter", () => {
+        runUriParameterTests(testContext);
+    });
+    describe("3.2.1.5.16 Special Parameters", () => {
+        runSpecialParameterTests(testContext);
+    });
+    describe("3.2.1.6.1 Searching Identifiers", () => {
+        runSearchingIdentifiersTests(testContext);
+    });
+    describe("3.2.1.6.1.1 Logical Identifiers", () => {
+        runLogicalIdentifiersTests(testContext);
+    });
+    describe("3.2.1.6.1.2 Searching by Membership", () => {
+        runSearchingByMembershipTests(testContext);
+    });
+    describe("3.2.1.6.1.3 Identifiers and References", () => {
+        runIdentifiersAndReferencesTests(testContext);
+    });
+    describe("3.2.1.6.1.4 Canonical Identifiers", () => {
+        runCanonicalIdentifiersTests(testContext);
+    });
+    describe("3.2.1.6.1.5 Canonical Identifiers", () => {
+        runCanonicalIdentifiersAddonTests(testContext);
+    });
+    describe("3.2.1.6.2 References and Versions", () => {
+        runReferencesAndVersionsTests(testContext);
+    });
+    describe("3.2.1.6.3 Searching Hierarchies", () => {
+        runHierarchicalSearchTests(testContext);
+    });
+    describe("3.2.1.6.4 Searching MIME Types", () => {
+        runMimeTypeSearchTests(testContext);
+    });
+    describe("3.2.1.6.5 Chaining (chained parameters)", () => {
+        runChainedParametersTests(testContext);
+    });
+    describe("3.2.1.6.6 Reverse Chaining", () => {
+        runReverseChainedParametersTests(testContext);
+    });
+    describe("3.2.1.6.7 Handling Missing Data", () => {
+        runHandlingMissingDataTests(testContext);
+    });
+    describe("3.2.1.6.8 Advanced filtering", () => {
+        runAdvancedFilteringTests(testContext);
+    });
+    describe("3.2.1.6.9 Searching Multiple Resource Types", () => {
+        runSearchingMultipleResourceTypesTests(testContext);
+    });
+    describe("3.2.1.6.10 Implicit Resources", () => {
+        runImplicitResourcesTests(testContext);
+    });
+    describe("3.2.1.6.11 Named Queries", () => {
+        runNamedQueriesTests(testContext);
+    });
+    describe("3.2.1.7 Modifying Search Results", () => {
+        runModifyingSearchResultsTests(testContext);
+    });
+    describe("3.2.1.7.1 Sorting (_sort)", () => {
+        runSortingTests(testContext);
+    });
+    describe("3.2.1.7.2 Total number of matching resources (_total)", () => {
+        runTotalCountTests(testContext);
+    });
+    describe("3.2.1.7.3 Limiting Page Size (_count)", () => {
+        runPageSizeTests(testContext);
+    });
+    describe("3.2.1.7.4 Limiting Total Result Size (_maxresults)", () => {
+        runMaxResultsTests(testContext);
+    });
+    describe("3.2.1.7.5 Summary (_summary)", () => {
+        runSummaryTests(testContext);
+    });
+    describe("3.2.1.7.6 Elements (_elements)", () => {
+        runElementsTests(testContext);
+    });
+    describe("3.2.1.7.7 Relevance (_score)", () => {
+        runRelevanceScoreTests(testContext);
+    });
+    describe("3.2.1.7.8.1 Inline Requests (_include and _revinclude)", () => {
+        runIncludeRevincludeTests(testContext);
+    });
+    describe("3.2.1.7.8.2 External References", () => {
+        runExternalReferencesTests(testContext);
+    });
+    describe("3.2.1.7.8.3 Graph Definitions (_graph)", () => {
+        runGraphDefinitionTests(testContext);
+    });
+    describe("3.2.1.7.8.4 Contained Resources (_contained)", () => {
+        runContainedResourcesTests(testContext);
+    });
+    describe("3.2.1.7.8.5 Paging and Other Resources", () => {
+        runPagingAndIncludesTests(testContext);
+        runPagingMultipleWithIncludesTests(testContext);
+    });
+    describe("3.2.1.8 Standard Parameters", () => {
+        runStandardParametersTests(testContext);
+    });
+    describe("3.2.1.8.1 Parameters for all resources", () => {
+        runAllResourceParametersTests(testContext);
+    });
+    describe("3.2.1.8.1.1 _content", () => {
+        runContentParameterTests(testContext);
+    });
+    describe("3.2.1.8.1.2 _has", () => {
+        runHasParameterTests(testContext);
+    });
+    describe("3.2.1.8.1.3 _id", () => {
+        runIdParameterTests(testContext);
+    });
+    describe("3.2.1.8.1.5 _language", () => {
+        runLanguageParameterTests(testContext);
+    });
+    describe("3.2.1.8.1.6 _lastUpdated", () => {
+        runLastUpdatedParameterTests(testContext);
+    });
+    describe("3.2.1.8.1.7 _list", () => {
+        runListParameterTests(testContext);
+    });
+    describe("3.2.1.8.1.8 _profile", () => {
+        runProfileParameterTests(testContext);
+    });
+    describe("3.2.1.8.1.9 _query", () => {
+        runQueryParameterTests(testContext);
+    });
+    describe("3.2.1.8.1.10 _security", () => {
+        runSecurityParameterTests(testContext);
+    });
+    describe("3.2.1.8.1.11 _source", () => {
+        runSourceParameterTests(testContext);
+    });
+    describe("3.2.1.8.1.12 _tag", () => {
+        runTagParameterTests(testContext);
+    });
+    describe("3.2.1.8.1.13 _text", () => {
+        runTextParameterTests(testContext);
+    });
+    describe("3.2.1.8.1.14 _type", () => {
+        runTypeParameterTests(testContext);
+    });
+    describe("3.2.1.8.2 Parameters for each resource", () => {
+        runResourceSpecificParameterTests(testContext);
+    });
+    describe("3.2.1.8.3 Text Search Parameters", () => {
+        runTextSearchParameterTests(testContext);
+    });
+    describe("3.2.1.9 Server Conformance", () => {
+        runServerConformanceTests(testContext);
+    });
+    describe("3.2.1.10 Search Result Currency", () => {
+        runSearchResultCurrencyTests(testContext);
+    });
 }
