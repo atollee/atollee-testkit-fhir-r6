@@ -1,8 +1,10 @@
 import { Procedure } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { createIdentifierOptions } from "./utils.ts";
+import { IIdentifierOptions } from "./types.ts";
 
-export interface ProcedureOptions {
+export interface ProcedureOptions extends IIdentifierOptions{
     code?: string;
     performedDateTime?: string;
     location?: { reference: string };
@@ -28,6 +30,7 @@ export async function createTestProcedure(
         performedDateTime: options.performedDateTime ||
             new Date().toISOString(),
         location: options.location,
+        identifier: createIdentifierOptions(options.identifier),
     };
 
     const response = await fetchWrapper({

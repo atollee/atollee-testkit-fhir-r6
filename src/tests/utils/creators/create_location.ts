@@ -1,10 +1,13 @@
 // creators/create_location.ts
 
-import { Location } from "npm:@types/fhir/r4.d.ts";
+import { Location, Reference } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { createIdentifierOptions } from "./utils.ts";
+import { IIdentifierOptions } from "./types.ts";
+import { assertTrue } from "../../../../deps.test.ts";
 
-interface LocationOptions {
+interface LocationOptions extends IIdentifierOptions {
     name?: string;
     partOf?: { reference: string };
     address?: {
@@ -16,18 +19,19 @@ interface LocationOptions {
         latitude: number;
         longitude: number;
     };
+    managingOrganization?: Reference | undefined;
 }
 
 export async function createTestLocation(
     _context: ITestContext,
-    options: LocationOptions = {
-        name: "TestLocation",
-    },
+    options: LocationOptions,
 ): Promise<Location> {
     const newLocation: Location = {
         resourceType: "Location",
         name: options.name || "TestLocation",
         partOf: options.partOf,
+        identifier: createIdentifierOptions(options.identifier),
+        managingOrganization: options.managingOrganization,
     };
 
     if (options.address) {
@@ -45,5 +49,9 @@ export async function createTestLocation(
         body: JSON.stringify(newLocation),
     });
 
+    if (!response.success) {
+        console.log(JSON.stringify(response, null, 2));
+    }
+    assertTrue(response.success, "creation of location was successful");
     return response.jsonBody as Location;
 }

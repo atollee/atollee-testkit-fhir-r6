@@ -6,14 +6,16 @@ import {
     assertEquals,
     assertExists,
     assertNotEquals,
-    it
+    it,
 } from "../../../../deps.test.ts";
 import { Bundle, OperationOutcome, Patient } from "npm:@types/fhir/r4.d.ts";
+import { createTestPatient } from "../../utils/resource_creators.ts";
 
 export function runUpdateTests(context: ITestContext) {
-    const validPatientId = context.getValidPatientId();
-
     it("update - Update existing resource", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
+
         // First, get the current version
         const initialResponse = await fetchWrapper({
             authorized: true,
@@ -108,9 +110,12 @@ export function runUpdateTests(context: ITestContext) {
     });
 
     it("update - Attempt update with mismatched ID", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
+
         const mismatchedPatient: Patient = {
             resourceType: "Patient",
-            id: "mismatched-id",
+            id: "mismatched-id**",
             active: true,
         };
 
@@ -139,6 +144,9 @@ export function runUpdateTests(context: ITestContext) {
     });
 
     it("update - Attempt update with no ID in resource", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
+
         const noIdPatient: Patient = {
             resourceType: "Patient",
             active: true,
@@ -168,6 +176,9 @@ export function runUpdateTests(context: ITestContext) {
     });
 
     it("update - Verify server ignores provided meta.versionId and meta.lastUpdated", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
+
         const initialResponse = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
@@ -210,6 +221,9 @@ export function runUpdateTests(context: ITestContext) {
     });
 
     it("update - Conditional update (If-Match)", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
+
         const initialResponse = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
@@ -246,6 +260,9 @@ export function runUpdateTests(context: ITestContext) {
     });
 
     it("update - Conditional update with outdated ETag", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
+
         const initialResponse = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
@@ -282,6 +299,9 @@ export function runUpdateTests(context: ITestContext) {
     });
 
     it("update - Preserve XML comments and formatting", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
+
         const xmlPatient = `
             <Patient xmlns="http://hl7.org/fhir">
                 <id value="${validPatientId}"/>
@@ -403,6 +423,9 @@ export function runUpdateTests(context: ITestContext) {
     });
 
     it("update - Verify update response matches subsequent read", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
+
         const initialResponse = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,

@@ -139,27 +139,7 @@ export function runCreateTests(_context: ITestContext) {
             "Response should include an OperationOutcome with issues",
         );
     });
-    /*
-    it("Create - Business rule violation", async () => {
-        // This test assumes a business rule that patients must have a name
-        const patientWithoutName: Patient = {
-            resourceType: "Patient",
-        };
 
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: "Patient",
-            method: "POST",
-            body: JSON.stringify(patientWithoutName),
-        });
-
-        assertEquals(response.success, false, "Create violating business rules should fail");
-        assertEquals(response.status, 422, "Should return 422 Unprocessable Entity for business rule violation");
-
-        const operationOutcome = response.jsonBody as OperationOutcome;
-        assertExists(operationOutcome.issue, "Response should include an OperationOutcome with issues");
-    });
-    */
     it("Create - Unsupported resource type", async () => {
         const unsupportedResource = {
             resourceType: "UnsupportedType",

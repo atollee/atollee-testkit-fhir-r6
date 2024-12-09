@@ -3,25 +3,24 @@
 import { fetchWrapper } from "../../utils/fetch.ts";
 import { Patient } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
-import {
-    assertEquals, assertTrue,
-    it
-} from "../../../../deps.test.ts";
+import { assertEquals, assertTrue, it } from "../../../../deps.test.ts";
+import { createTestPatient } from "../../utils/resource_creators.ts";
 
 // 3.2.0.1.2 Service Base URL (identity part)
-export function runServiceBaseUrlIdentityTests(context: ITestContext) {
+export async function runServiceBaseUrlIdentityTests(context: ITestContext) {
     const baseUrl = context.getBaseUrl();
-    const patientId = context.getValidPatientId(); // Use a known patient ID for testing
+    const patient = await createTestPatient(context);
+    const patientId = patient.id;
 
     it("Identity - Query Parameter Ignored", async () => {
         const responseWithoutQuery = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient/${patientId}`,
+            relativeUrl: `Patient/${patient.id}`,
         });
 
         const responseWithQuery = await fetchWrapper({
             authorized: true,
-            relativeUrl: `Patient/${patientId}?_format=json`,
+            relativeUrl: `Patient/${patient.id}?_format=json`,
         });
 
         assertEquals(
@@ -118,41 +117,4 @@ export function runServiceBaseUrlIdentityTests(context: ITestContext) {
             assertTrue(true, "only https is supported");
         }
     });
-    /*
-    // To discuss whether this test make sense in practice
-    it("Identity - Different Ports", async () => {
-        // Note: This test assumes your server is available on different ports
-        // You may need to adjust this based on your server configuration
-        const defaultPortResponse = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient/${patientId}`,
-        });
-
-        const alternatePortResponse = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient/${patientId}`,
-            overrideBaseUrl: baseUrl.replace(/:443/, ":8443"), // Assuming default HTTPS port is 443
-        });
-
-        assertEquals(
-            defaultPortResponse.success,
-            true,
-            "Request to default port should be successful",
-        );
-        assertEquals(
-            alternatePortResponse.success,
-            true,
-            "Request to alternate port should be successful",
-        );
-
-        const defaultPortPatient = defaultPortResponse.jsonBody as Patient;
-        const alternatePortPatient = alternatePortResponse.jsonBody as Patient;
-
-        assertNotEquals(
-            defaultPortPatient.id,
-            alternatePortPatient.id,
-            "Patient IDs should be different for different ports",
-        );
-    });
-    */
 }

@@ -1,15 +1,25 @@
 // tests/paging.test.ts
 
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import { ITestContext } from "../../types.ts";
-import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
+import {
+    assertEquals,
+    assertExists,
+    assertTrue,
+    it,
+} from "../../../../deps.test.ts";
 import { Bundle } from "npm:@types/fhir/r4.d.ts";
+import { createTestPatient } from "../../utils/resource_creators.ts";
 
 export function runPagingTests(context: ITestContext) {
     const baseUrl = context.getBaseUrl();
-
     it("Paging - Search results", async () => {
-        const response = await fetchWrapper({
+        for (let i = 0; i < 10; i++) {
+            await createTestPatient(context, {
+                name: [{ given: [`TestPatient${i}`] }],
+            });
+        }
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: "Patient?_count=5", // Request 5 results per page
         });
@@ -42,9 +52,13 @@ export function runPagingTests(context: ITestContext) {
         // If there's a next page, check it
         const nextLink = bundle.link.find((link) => link.relation === "next");
         if (nextLink) {
+            let nextLinkUrl = nextLink.url!.replace(baseUrl, "");
+            if (nextLinkUrl.startsWith("/")) {
+                nextLinkUrl = nextLinkUrl.substring(1);
+            }
             const nextPageResponse = await fetchWrapper({
                 authorized: true,
-                relativeUrl: nextLink.url!.replace(baseUrl, ""),
+                relativeUrl: nextLinkUrl,
             });
 
             assertEquals(
@@ -60,9 +74,8 @@ export function runPagingTests(context: ITestContext) {
             );
 
             // Check if the next page has the correct number of entries
-            assertEquals(
+            assertTrue(
                 nextPageBundle.entry?.length ?? 0 <= 5,
-                true,
                 "Next page bundle should have 5 or fewer entries",
             );
 
@@ -170,8 +183,13 @@ export function runPagingTests(context: ITestContext) {
     });
 
     it("Paging - POST search with continuation", async () => {
+        for (let i = 0; i < 10; i++) {
+            await createTestPatient(context, {
+                name: [{ given: [`TestPatient${i}`] }],
+            });
+        }
         // First, perform a POST search
-        const initialResponse = await fetchWrapper({
+        const initialResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: "Patient/_search",
             method: "POST",
@@ -193,9 +211,13 @@ export function runPagingTests(context: ITestContext) {
             link.relation === "next"
         );
         if (nextLink) {
+            let nextLinkUrl = nextLink.url!.replace(baseUrl, "");
+            if (nextLinkUrl.startsWith("/")) {
+                nextLinkUrl = nextLinkUrl.substring(1);
+            }
             const nextPageResponse = await fetchWrapper({
                 authorized: true,
-                relativeUrl: nextLink.url!.replace(baseUrl, ""),
+                relativeUrl: nextLinkUrl,
                 method: "GET",
             });
 

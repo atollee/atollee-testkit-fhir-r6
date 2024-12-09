@@ -9,8 +9,10 @@ import {
 } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { IIdentifierOptions } from "./types.ts";
+import { createIdentifierOptions } from "./utils.ts";
 
-export interface ConditionOptions {
+export interface ConditionOptions extends IIdentifierOptions {
     code?: CodeableConcept | {
         coding?: Array<{
             system: string;
@@ -55,6 +57,7 @@ export async function createTestCondition(
             }],
         },
         text: options.text,
+        identifier: createIdentifierOptions(options.identifier),
     };
     if (options.meta) {
         newCondition.meta = options.meta;

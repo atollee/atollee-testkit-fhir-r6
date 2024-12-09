@@ -1,6 +1,56 @@
 import type { Resource } from "npm:@types/fhir/r4.d.ts";
 
 export interface Config {
+    traceFetchCalls: boolean;
+    debugFetchCalls: boolean;
+    searchParameterCaseInsensitiveSupported?: boolean;
+    identifierModifierSupported?: boolean;
+    absoluteUrlReferencesSupported?: boolean;
+    approximitySearchRange?: number;
+    serverTimeZone: string;
+    ignoringUnknownParameters?: boolean;
+    namedListSearchParameterSupported?: boolean;
+    sourceSearchParameterSupported?: boolean;
+    querySearchParameterSupported?: boolean;
+    languageSearchParameterSupported?: boolean;
+    containedSearchesSupported?: boolean;
+    graphSearchParameterSupported?: boolean;
+    relevantSortSupported?: boolean;
+    maxResultsSearchParameterSupported?: boolean;
+    elementSearchParameterSupported?: boolean;
+    summarySearchParameterSupported?: boolean;
+    expandOperationSupported?: boolean;
+    implicitCodeSystemSearchSupported?: boolean;
+    multipleResourceTypeSearchSupported?: boolean;
+    filterContainsOperatorSupported?: boolean;
+    hasForChainedSearchesSupported?: boolean;
+    rejectSearchWithAmbiguousResourceTypesSupported?: boolean;
+    compositionSectionTextParameterSupported?: boolean;
+    locationContainsParameterSupported?: boolean;
+    locationNearParameterSupported?: boolean;
+    approximateSearchSupported?: boolean;
+    externalReferencesAllowed?: boolean;
+    fullTextSearchSupported?: boolean;
+    ofTypeModifierSupported?: boolean;
+    notInModifierSnomedSystemSupported?: boolean;
+    identifierReferenceSearchSupported?: boolean;
+    identifierCanonicalSearchSupported?: boolean;
+    belowModifierOnMimeTypesSupported?: boolean;
+    canonicalUrlBelowModifierSupported?: boolean;
+    belowModifierOnSnomedCodeSystemsSupported?: boolean;
+    locationBelowModifierSupported?: boolean;
+    aboveModifierOnSnomedCodeSystemsSupported?: boolean;
+    hapiBugsDisallowed?: boolean;
+    canonicalUrlAboveModifierSupported?: boolean;
+    semverVersionComparisonSupported?: boolean;
+    locationAboveModifierSupported?: boolean;
+    enforceDisallowingMultipleModifiers?: boolean;
+    paginationNextRelationLinkSupported?: boolean;
+    paginationFirstRelationLinkSupported?: boolean;
+    emptyParametersAllowed?: boolean;
+    lenientSearchHandlingSupported?: boolean;
+    multiTypeSupported?: boolean;
+    textContentSearchSupported?: boolean;
     clientId: string;
     clientSecret: string;
     scope: string;
@@ -20,6 +70,11 @@ export interface Config {
     paginationSupported: boolean;
     userName: string;
     password: string;
+    showFetchResponses?: boolean;
+    recordFetchFailures?: boolean;
+    preferHeaderReturned?: boolean;
+    bundleTotalMandatory?: boolean;
+    transactionSupported: boolean;
 }
 
 export interface IFetchOptions extends RequestInit {
@@ -40,6 +95,43 @@ export interface IFetchResponse {
 }
 
 export interface ITestContext {
+    createRelativeUrl(url: string): string;
+    isSearchParameterCaseInsensitiveSupported(): boolean;
+    isIdentifierModifierSupported(): boolean;
+    isAbsoluteUrlReferencesSupported(): boolean;
+    getApproximitySearchRange(): number;
+    getServerTimezone(): string;
+    isIgnoringUnknownParameters(): boolean;
+    isNamedListSearchParameterSupported(): boolean;
+    isSourceSearchParameterSupported(): unknown;
+    isQuerySearchParameterSupported(): boolean;
+    isLanguageSearchParameterSupported(): boolean;
+    isContainedSearchesSupported(): boolean;
+    isGraphSearchParameterSupported(): boolean;
+    isRelevantSortSupported(): boolean;
+    isMaxResultsSearchParameterSupported(): boolean;
+    isElementSearchParameterSupported(): boolean;
+    isSummarySearchParameterSupported(): boolean;
+    isExpandOperationSupported(): boolean;
+    isImplicitCodeSystemSearchSupported(): boolean;
+    isMultipleResourceTypeSearchSupported(): boolean;
+    isFilterContainsOperatorSupported(): boolean;
+    isHasForChainedSearchesSupported(): boolean;
+    isRejectSearchWithAmbiguousResourceTypesSupported(): boolean;
+    isCompositionSectionTextParameterSupported(): boolean;
+    isLocationNearParameterSupported(): boolean;
+    isLocationContainsParameterSupported(): boolean;
+    isApproximateSearchSupported(): unknown;
+    areExternalReferencesAllowed(): boolean;
+    isFullTextSearchSupported(): boolean;
+    isOfTypeModifierSupported(): boolean;
+    isNotInModifierSnomedSystemSupported(): boolean;
+    isIdentifierReferenceSearchSupported(): boolean;
+    isIdentifierCanonicalSearchSupported(): boolean;
+    isBelowModifierOnMimeTypesSupported(): boolean;
+    isCanonicalUrlBelowModifierSupported(): boolean;
+    isBelowModifierOnSnomedCodeSystemsSupported(): boolean;
+    isLocationBelowModifierSupported(): boolean;
     getDefaultPageSize(): number;
     isPaginationSupported(): boolean;
     isHttpSupported(): boolean;
@@ -53,4 +145,19 @@ export interface ITestContext {
     isTurtleSupported(): boolean;
     isReferentialIntegritySupported(): boolean;
     areReferencesVersionSpecific(): boolean;
+    isHapiBugsDisallowed(): boolean;
+    isAboveModifierOnSnomedCodeSystemsSupported(): boolean;
+    isSemverVersionComparisonSupported(): boolean;
+    isCanonicalUrlAboveModifierSupported(): boolean;
+    isLocationAboveModifierSupported(): boolean;
+    enforceMultipleModifiersDisallowed(): boolean;
+    isPaginationFirstRelationLinkSupported(): boolean;
+    isPaginationNextRelationLinkSupported(): boolean;
+    areEmptyParametersAllowed(): boolean;
+    isLenientSearchHandlingSupported(): boolean;
+    isMultiTypeSearchSupported(): boolean;
+    isTextContentSearchSupported(): boolean;
+    isBundleTotalMandatory(): unknown;
+    isPreferHeaderReturned(): boolean;
+    areTransactionSupported(): boolean;
 }

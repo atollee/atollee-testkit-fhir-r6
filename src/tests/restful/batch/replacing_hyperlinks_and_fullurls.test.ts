@@ -101,7 +101,7 @@ export function runReplacingHyperlinksAndFullUrlsTests(_context: ITestContext) {
                         resourceType: "Binary",
                         contentType: "image/png",
                         data:
-                            "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", // Base64 encoded 1x1 transparent GIF
+                            "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
                     },
                 },
                 {
@@ -140,21 +140,32 @@ export function runReplacingHyperlinksAndFullUrlsTests(_context: ITestContext) {
         );
 
         const binaryLocation = responseBundle.entry?.[0].response?.location;
-        const patientResource = responseBundle.entry?.[1].resource as Patient;
         assertExists(binaryLocation, "Binary location should be provided");
-        assertExists(
-            patientResource.text?.div,
-            "Patient should have narrative text",
-        );
-        assertNotEquals(
-            patientResource.text?.div.indexOf(binaryUuid),
+
+        // Get the created Patient to verify the narrative
+        const patientLocation = responseBundle.entry?.[1].response?.location;
+        assertExists(patientLocation, "Patient location should be provided");
+
+        const getPatient = await fetchWrapper({
+            authorized: true,
+            relativeUrl: patientLocation,
+        });
+
+        const patient = getPatient.jsonBody as Patient;
+        assertExists(patient.text?.div, "Patient should have narrative text");
+
+        // Original UUID should be replaced
+        assertEquals(
+            patient.text.div.indexOf(binaryUuid),
             -1,
-            "UUID reference should be replaced in narrative",
+            "Original UUID should not exist in narrative",
         );
+
+        // Should contain the new Binary URL
         assertNotEquals(
-            patientResource.text?.div.indexOf(binaryLocation!),
+            patient.text.div.indexOf(binaryLocation),
             -1,
-            "Binary location should be present in narrative",
+            "Narrative should contain the new Binary URL",
         );
     });
 

@@ -1,6 +1,6 @@
 // tests/search_get.test.ts
 
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import { ITestContext } from "../../types.ts";
 import {
     assertEquals,
@@ -8,11 +8,10 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
-import { Bundle, Patient } from "npm:@types/fhir/r4.d.ts";
+import { Bundle } from "npm:@types/fhir/r4.d.ts";
+import { createTestPatient } from "../../utils/resource_creators.ts";
 
 export function runSearchGetTests(context: ITestContext) {
-    const baseUrl = context.getBaseUrl();
-
     it("Search GET - Resource Type", async () => {
         const response = await fetchWrapper({
             authorized: true,
@@ -129,10 +128,10 @@ export function runSearchGetTests(context: ITestContext) {
 
     it("Search GET - With multiple parameters", async () => {
         for (let i = 0; i < 8; i++) {
-            const response = await createTestPatient(context, "Test");
+            const response = await createTestPatient(context);
             assertTrue(response, "Patient creation should be successful");
         }
-        const response = await fetchWrapper({
+        const response = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: "Patient?name=Test&gender=male&_count=5",
         });
@@ -198,10 +197,10 @@ export function runSearchGetTests(context: ITestContext) {
 
     it("Search GET - Pagination", async () => {
         for (let i = 0; i < 15; i++) {
-            const response = await createTestPatient(context, "Test");
+            const response = await createTestPatient(context);
             assertTrue(response, "Patient creation should be successful");
         }
-        const firstPageResponse = await fetchWrapper({
+        const firstPageResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: "Patient?_count=5",
         });
@@ -222,6 +221,7 @@ export function runSearchGetTests(context: ITestContext) {
         )?.url;
         assertExists(nextLink, "Next link should exist");
 
+        const baseUrl = context.getBaseUrl();
         const targetBaseUrl = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
         const relativeNextLink = nextLink.startsWith(targetBaseUrl)
             ? nextLink.substring(targetBaseUrl.length)
@@ -242,26 +242,4 @@ export function runSearchGetTests(context: ITestContext) {
             "Should have a previous link",
         );
     });
-
-    async function createTestPatient(
-        _context: ITestContext,
-        family: string,
-    ): Promise<Patient> {
-        const newPatient: Patient = {
-            resourceType: "Patient",
-            name: [{ family: family }],
-            gender: "male",
-            active: false,
-            telecom: [{}],
-        };
-
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: "Patient",
-            method: "POST",
-            body: JSON.stringify(newPatient),
-        });
-
-        return response.jsonBody as Patient;
-    }
 }

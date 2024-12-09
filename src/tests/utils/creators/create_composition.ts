@@ -4,8 +4,11 @@ import { Composition, Reference } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
 import { createTestPractitioner } from "./create_practitioner.ts";
+import { IIdentifierOptions } from "./types.ts";
+import { createTestIdentifier } from "../resource_creators.ts";
+import { assertTrue } from "../../../../deps.test.ts";
 
-interface CompositionSectionOptions {
+interface CompositionSectionOptions extends IIdentifierOptions {
     code?: {
         coding: Array<{
             system: string;
@@ -20,7 +23,7 @@ interface CompositionSectionOptions {
     };
 }
 
-interface CompositionOptions {
+interface CompositionOptions extends IIdentifierOptions {
     status: "preliminary" | "final" | "amended" | "entered-in-error";
     type: {
         coding: Array<{
@@ -48,8 +51,20 @@ export async function createTestComposition(
         author: [{ reference: `Practitioner/${practitioner.id}` }],
         title: "Test Composition",
         section: options.sections,
+        identifier: createTestIdentifier(),
     };
 
+    for (const section of newComposition.section ?? []) {
+        if (
+            section.entry === undefined || section.section === undefined ||
+            section.text === undefined
+        ) {
+            section.text = {
+                status: "generated",
+                div: "<div>Dummy text</div>",
+            };
+        }
+    }
     const response = await fetchWrapper({
         authorized: true,
         relativeUrl: "Composition",
@@ -57,5 +72,6 @@ export async function createTestComposition(
         body: JSON.stringify(newComposition),
     });
 
+    assertTrue(response.success, "creation of composition was successful");
     return response.jsonBody as Composition;
 }

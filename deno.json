@@ -3,15 +3,22 @@
     "@std/assert": "jsr:@std/assert@^1.0.5",
     "@std/cli": "jsr:@std/cli@^1.0.6",
     "@types/fhir": "npm:@types/fhir@^3.0.2",
-    "fhirpath": "npm:fhirpath@^3.15.0"
+    "fhirpath": "npm:fhirpath@^3.15.0",
+    "luxon": "npm:luxon@^3.5.0"
   },
   "compilerOptions": {
     "experimentalDecorators": true
   },
   "tasks": {
-    "test:restful": "deno test --allow-all --trace-leaks ./src/runner.ts --",
-    "test:restful:junit": "deno test --allow-all --trace-leaks ./src/runner.ts --reporter junit",
-    "test:restful:json": "deno test --allow-all --trace-leaks ./src/runner.ts -- --store",
-    "test:restful:init": "deno test --allow-all --trace-leaks ./src/init/suite.ts"
+    "test:restful": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t restful",
+    "test:restful:junit": "deno test --allow-all --trace-leaks ./src/runner.ts --reporter junit -- -t restful",
+    "test:restful:json": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t restful --store",
+    "test:restful:init": "deno test --allow-all --trace-leaks ./src/init/suite.ts -- -t restful",
+    "test:search": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t search",
+    "test:search:json": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t search --store",
+    "test:search:junit": "deno test --allow-all --trace-leaks ./src/runner.ts --reporter junit -- -t search",
+    "test:operations": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t operations",
+    "test:operations:json": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t operations --store",
+    "test:operations:junit": "deno test --allow-all --trace-leaks ./src/runner.ts --reporter junit -- -t operations"
   }
 }

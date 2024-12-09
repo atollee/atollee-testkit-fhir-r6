@@ -6,6 +6,7 @@ import {
     setTestDuration,
 } from "./mod.ts";
 import { extractSourceCode } from "./source.ts";
+import { extractErrorMessage } from "../error.ts";
 
 export function it(name: string, fn: () => void | Promise<void>): void {
     const { sourceCode, lineOffset } = extractSourceCode();
@@ -31,7 +32,9 @@ export function it(name: string, fn: () => void | Promise<void>): void {
             currentTest.result = "pass";
         } catch (error) {
             currentTest.result = "fail";
-            currentTest.error = error;
+            currentTest.error = error instanceof Error
+                ? error
+                : new Error(extractErrorMessage(error));
             throw error;
         } finally {
             const end = performance.now();

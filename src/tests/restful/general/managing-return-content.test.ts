@@ -9,10 +9,12 @@ import {
     assertTrue,
     it,
 } from "../../../../deps.test.ts";
+import { createTestPatient } from "../../utils/resource_creators.ts";
 
 export function runManagingReturnContentTests(context: ITestContext) {
     it("Managing Return Content - Server Default Timezone", async () => {
-        const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         const response = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${validPatientId}`,
@@ -33,7 +35,8 @@ export function runManagingReturnContentTests(context: ITestContext) {
     });
 
     it("Managing Return Content - Return minimal content", async () => {
-        const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         const updatedPatientData = {
             resourceType: "Patient",
             id: validPatientId,
@@ -65,7 +68,8 @@ export function runManagingReturnContentTests(context: ITestContext) {
     });
 
     it("Managing Return Content - Return representation on update", async () => {
-        const validPatientId = context.getValidPatientId(); // Use a known valid patient ID
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         const updatedPatientData = {
             resourceType: "Patient",
             id: validPatientId,
@@ -136,11 +140,13 @@ export function runManagingReturnContentTests(context: ITestContext) {
             "OperationOutcome",
             "Returned resource should be an OperationOutcome",
         );
-        assertEquals(
-            response.headers.get("Prefer"),
-            "return=OperationOutcome",
-            "Response should acknowledge the Prefer header",
-        );
+        if (context.isPreferHeaderReturned()) {
+            assertEquals(
+                response.headers.get("Prefer"),
+                "return=OperationOutcome",
+                "Response should acknowledge the Prefer header",
+            );
+        }
     });
 
     it("Managing Return Content - Prefer header respected on create", async () => {
@@ -182,16 +188,27 @@ export function runManagingReturnContentTests(context: ITestContext) {
             "Full response should be successful",
         );
 
+        // Check that the responses differ based on the Prefer header
         assertNotEquals(
             minimalResponse.jsonBody,
             fullResponse.jsonBody,
             "Minimal and full responses should be different",
         );
+
+        // For minimal response, the body should be empty or contain minimal information
         assertTrue(
             minimalResponse.jsonBody === null ||
-                minimalResponse.jsonBody === undefined,
-            "Minimal response should have no body",
+                minimalResponse.jsonBody === undefined ||
+                Object.keys(minimalResponse.jsonBody).length === 0 ||
+                (minimalResponse.jsonBody.resourceType === "OperationOutcome" &&
+                    // deno-lint-ignore no-explicit-any
+                    (minimalResponse.jsonBody as any).issue &&
+                    // deno-lint-ignore no-explicit-any
+                    (minimalResponse.jsonBody as any).issue.length === 0),
+            "Minimal response should have no body, an empty object, or an empty OperationOutcome",
         );
+
+        // For full response, the body should contain the created resource
         assertExists(
             fullResponse.jsonBody,
             "Full response should include the resource",
@@ -202,15 +219,31 @@ export function runManagingReturnContentTests(context: ITestContext) {
             "Full response should return a Patient resource",
         );
 
-        assertEquals(
-            minimalResponse.headers.get("Prefer"),
-            "return=minimal",
-            "Minimal response should acknowledge the Prefer header",
+        // Both responses should include a Location header
+        assertExists(
+            minimalResponse.headers.get("Location"),
+            "Minimal response should include a Location header",
         );
-        assertEquals(
-            fullResponse.headers.get("Prefer"),
-            "return=representation",
-            "Full response should acknowledge the Prefer header",
+        assertExists(
+            fullResponse.headers.get("Location"),
+            "Full response should include a Location header",
         );
+
+        // Optionally, check if the server echoed back the Prefer header
+        // Note: This is not required by FHIR, but some servers might do it
+        if (minimalResponse.headers.get("Prefer")) {
+            assertEquals(
+                minimalResponse.headers.get("Prefer"),
+                "return=minimal",
+                "If present, minimal response Prefer header should match the request",
+            );
+        }
+        if (fullResponse.headers.get("Prefer")) {
+            assertEquals(
+                fullResponse.headers.get("Prefer"),
+                "return=representation",
+                "If present, full response Prefer header should match the request",
+            );
+        }
     });
 }

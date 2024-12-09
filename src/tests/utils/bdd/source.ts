@@ -17,15 +17,20 @@ export function extractSourceCode(): {
                 "\n",
             ),
         );
-        throw new Error("no caller line index found");
+        return {
+            sourceCode: "no caller line index found",
+            lineOffset: -1,
+        };
     }
     const callerLine = stack[callerLineIndex];
     const match = callerLine.match(/at .+\((.+):(\d+):\d+\)/);
     if (!match) {
         console.log("caller line", callerLine);
-        throw new Error(
-            "Unable to extract file path and line number from stack trace",
-        );
+        return {
+            sourceCode:
+                "Unable to extract file path and line number from stack trace",
+            lineOffset: -1,
+        };
     }
 
     const [, filePath, lineNumber] = match;

@@ -21,6 +21,8 @@
       "npm:@types/fhir@^3.0.2": "npm:@types/fhir@3.0.2",
       "npm:@types/node": "npm:@types/node@18.16.19",
       "npm:fhirpath@^3.15.0": "npm:fhirpath@3.15.2",
+      "npm:luxon": "npm:luxon@3.5.0",
+      "npm:luxon@^3.5.0": "npm:luxon@3.5.0",
       "npm:path-to-regexp@6.2.1": "npm:path-to-regexp@6.2.1",
       "npm:puppeteer-core@22.7.1": "npm:puppeteer-core@22.7.1_devtools-protocol@0.0.1273771",
       "npm:puppeteer@22.7.1": "npm:puppeteer@22.7.1"
@@ -589,6 +591,10 @@
         "integrity": "sha512-jumlc0BIUrS3qJGgIkWZsyfAM7NCWiBcCDhnd+3NNM5KbBmLTgHVfWBcg6W+rLUsIpzpERPsvwUP7CckAQSOoA==",
         "dependencies": {}
       },
+      "luxon@3.5.0": {
+        "integrity": "sha512-rh+Zjr6DNfUYR3bPwJEnuwDdqMbxZW7LOQfUN4B54+Cl+0o5zaU9RJ6bcidfDtC1cWCZXQ+nvX8bf6bAji37QQ==",
+        "dependencies": {}
+      },
       "mitt@3.0.1": {
         "integrity": "sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==",
         "dependencies": {}
@@ -1082,7 +1088,8 @@
       "jsr:@std/assert@^1.0.5",
       "jsr:@std/cli@^1.0.6",
       "npm:@types/fhir@^3.0.2",
-      "npm:fhirpath@^3.15.0"
+      "npm:fhirpath@^3.15.0",
+      "npm:luxon@^3.5.0"
     ]
   }
 }

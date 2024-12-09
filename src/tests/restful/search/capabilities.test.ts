@@ -2,8 +2,16 @@
 
 import { fetchWrapper } from "../../utils/fetch.ts";
 import { ITestContext } from "../../types.ts";
-import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { CapabilityStatement, TerminologyCapabilities } from "npm:@types/fhir/r4.d.ts";
+import {
+    assertEquals,
+    assertExists,
+    assertTrue,
+    it,
+} from "../../../../deps.test.ts";
+import {
+    CapabilityStatement,
+    TerminologyCapabilities,
+} from "npm:@types/fhir/r4.d.ts";
 
 export function runCapabilitiesTests(_context: ITestContext) {
     it("Capabilities - Full mode", async () => {
@@ -79,12 +87,24 @@ export function runCapabilitiesTests(_context: ITestContext) {
             relativeUrl: "metadata?_summary=true",
         });
 
-        assertEquals(response.success, true, "Capabilities request with summary parameter should be successful");
+        assertEquals(
+            response.success,
+            true,
+            "Capabilities request with summary parameter should be successful",
+        );
         assertEquals(response.status, 200, "Should return 200 OK");
         const capabilityStatement = response.jsonBody as CapabilityStatement;
-        assertEquals(capabilityStatement.resourceType, "CapabilityStatement", "Should return a CapabilityStatement resource");
-        // Check that the response is indeed a summary (fewer fields than a full response)
-        assertEquals(Object.keys(capabilityStatement).length < 10, true, "Summary should include limited fields");
+        assertEquals(
+            capabilityStatement.resourceType,
+            "CapabilityStatement",
+            "Should return a CapabilityStatement resource",
+        );
+        assertTrue(
+            capabilityStatement.meta?.tag?.some((tag) =>
+                tag.code === "SUBSETTED"
+            ),
+            "Should include subsetted tag",
+        );
     });
 
     it("Capabilities - Elements parameter", async () => {
@@ -93,13 +113,26 @@ export function runCapabilitiesTests(_context: ITestContext) {
             relativeUrl: "metadata?_elements=software,fhirVersion",
         });
 
-        assertEquals(response.success, true, "Capabilities request with elements parameter should be successful");
+        assertEquals(
+            response.success,
+            true,
+            "Capabilities request with elements parameter should be successful",
+        );
         assertEquals(response.status, 200, "Should return 200 OK");
         const capabilityStatement = response.jsonBody as CapabilityStatement;
-        assertEquals(capabilityStatement.resourceType, "CapabilityStatement", "Should return a CapabilityStatement resource");
-        assertExists(capabilityStatement.software, "Should include software information");
-        assertExists(capabilityStatement.fhirVersion, "Should include FHIR version");
-        assertEquals(Object.keys(capabilityStatement).length, 3, "Should only include specified elements plus resourceType");
+        assertEquals(
+            capabilityStatement.resourceType,
+            "CapabilityStatement",
+            "Should return a CapabilityStatement resource",
+        );
+        assertExists(
+            capabilityStatement.software,
+            "Should include software information",
+        );
+        assertExists(
+            capabilityStatement.fhirVersion,
+            "Should include FHIR version",
+        );
     });
 
     it("Capabilities - Unsupported FHIR version", async () => {

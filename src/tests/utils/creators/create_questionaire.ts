@@ -3,8 +3,10 @@
 import { Questionnaire } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { fetchWrapper } from "../fetch.ts";
+import { createIdentifierOptions } from "./utils.ts";
+import { IIdentifierOptions } from "./types.ts";
 
-export interface QuestionnaireOptions {
+export interface QuestionnaireOptions extends IIdentifierOptions {
     url?: string;
     version?: string;
     status?: "draft" | "active" | "retired" | "unknown";
@@ -30,6 +32,7 @@ export async function createTestQuestionnaire(
                 type: "string",
             },
         ],
+        identifier: createIdentifierOptions(options.identifier),
     };
 
     const response = await fetchWrapper({

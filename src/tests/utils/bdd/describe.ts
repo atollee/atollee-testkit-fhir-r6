@@ -3,6 +3,7 @@ import {
 } from "https://deno.land/std@0.224.0/testing/bdd.ts";
 import { TestSuite } from "./types.ts";
 import { getTestRecorderState, setCurrentDescribe } from "./mod.ts";
+import { extractErrorMessage } from "../error.ts";
 
 export function describe(name: string, fn: () => void | Promise<void>): void {
     originalDescribe(name, async () => {
@@ -15,7 +16,7 @@ export function describe(name: string, fn: () => void | Promise<void>): void {
         try {
             await fn();
         } catch (error) {
-            suite.error = error.toString();
+            suite.error = extractErrorMessage(error);
         } finally {
             const end = performance.now();
             suite.duration = end - start;
