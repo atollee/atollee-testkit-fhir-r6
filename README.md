@@ -1,10 +1,10 @@
-# atollee FHIR R5 Server Testkit
+# atollee FHIR R6 (Preview) Server Testkit
 
-This kit runs a comprehensive suite of tests against FHIR implementations, featuring OAuth 2.0 authentication, various FHIR operations, and configurable settings to accommodate different server capabilities. It helps implementers and maintainers ensure their servers comply with the FHIR R5 specification (with substantial support for R4) and follow best practices.
+This kit runs a comprehensive suite of tests against FHIR implementations, featuring OAuth 2.0 authentication, various FHIR operations, and configurable settings to accommodate different server capabilities. It helps implementers and maintainers ensure their servers comply with the FHIR R6 Ballot (2nd Draft) specification (with substantial support for R4) and follow best practices.
 
 ## Features
 
-- Extensive test coverage for FHIR R5 (and R4) operations
+- Extensive test coverage for FHIR R6 (Preview) operations
 - OAuth 2.0 authentication support with browser automation
 - Configurable settings to accommodate different server capabilities
 - Batch and transaction testing
@@ -20,7 +20,7 @@ This kit runs a comprehensive suite of tests against FHIR implementations, featu
 ## Prerequisites
 
 - [Deno](https://deno.land/) (version 1.31.0 or higher)
-- A FHIR R5 (and R4) server to test against
+- A FHIR R6 server to test against
 - OAuth 2.0 credentials (if your server requires authentication)
 
 ## Setup
