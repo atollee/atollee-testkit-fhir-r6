@@ -3,6 +3,7 @@ import { restfulSuite } from "./tests/restful/restful_suite.ts";
 import { getTestResults, mainDescribe } from "./tests/utils/bdd/mod.ts";
 import { searchSuite } from "./tests/search/search_suite.ts";
 import { operationsSuite } from "./tests/operations/operations_suite.ts";
+import { importBundleSuite } from "./init/suite.ts";
 
 const { args } = Deno;
 const parsedArgs = parseArgs(args, {
@@ -59,6 +60,13 @@ switch (suite) {
             async () => operationsSuite(callback),
         );
         break;
+    case "init": {
+        await mainDescribe(
+            "FHIR Import",
+            async () => importBundleSuite(callback),
+        );
+        break;
+    }
     case "all": {
         await mainDescribe(
             "FHIR Search Tests",

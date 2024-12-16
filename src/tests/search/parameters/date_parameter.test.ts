@@ -18,7 +18,6 @@ import { Bundle, Observation } from "npm:@types/fhir/r4.d.ts";
 import { ITestContext } from "../../types.ts";
 import { createTestMedicationStatement } from "../../utils/creators/create_medication_statement.ts";
 import { DateTime, Duration } from "npm:luxon";
-import { match } from "npm:path-to-regexp@6.2.1";
 
 export function runDateParameterTests(context: ITestContext) {
     it("Should search using full date-time format", async () => {

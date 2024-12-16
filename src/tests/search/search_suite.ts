@@ -111,6 +111,7 @@ import { updateRandomText } from "../utils/resource_creators.ts";
 import { createTestContext } from "../utils/testContext.ts";
 import { runPagingMultipleWithIncludesTests } from "./references/paging_multiple_and_includes.ts";
 
+// deno-lint-ignore require-await
 export async function searchSuite(callback: () => void) {
     let accessToken: string | undefined;
 

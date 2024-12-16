@@ -5,24 +5,22 @@ import { CONFIG } from "../tests/config.ts";
 import { runBundleImportTests } from "./bundle_import.ts";
 import { createTestContext } from "../tests/utils/testContext.ts";
 
-describe({
-    name: "FHIR Bundle Import",
-    fn: () => {
-        let accessToken: string | undefined;
+export async function importBundleSuite(callback: () => void) {
+    let accessToken: string | undefined;
 
-        beforeAll(async () => {
-            accessToken = await getAccessToken();
-        });
+    beforeAll(async () => {
+        accessToken = await getAccessToken();
+    });
 
-        afterAll(() => {
-        });
+    afterAll(() => {
+        if (callback) {
+            callback();
+        }
+    });
 
-        const testContext: ITestContext = createTestContext(accessToken);
+    const testContext: ITestContext = createTestContext(accessToken);
 
-        describe("3.2.0.1.2 Service Base URL", () => {
-            runBundleImportTests(testContext);
-        });
-    },
-    sanitizeOps: false,
-    sanitizeResources: false,
-});
+    describe("Bundle Import", () => {
+        runBundleImportTests(testContext);
+    });
+}

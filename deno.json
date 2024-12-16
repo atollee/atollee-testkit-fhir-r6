@@ -13,7 +13,7 @@
     "test:restful": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t restful",
     "test:restful:junit": "deno test --allow-all --trace-leaks ./src/runner.ts --reporter junit -- -t restful",
     "test:restful:json": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t restful --store",
-    "test:restful:init": "deno test --allow-all --trace-leaks ./src/init/suite.ts -- -t restful",
+    "test:restful:init": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t init",
     "test:search": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t search",
     "test:search:json": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t search --store",
     "test:search:junit": "deno test --allow-all --trace-leaks ./src/runner.ts --reporter junit -- -t search",
