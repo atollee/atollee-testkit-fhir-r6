@@ -1,8 +1,9 @@
 import type { Resource } from "npm:@types/fhir/r4.d.ts";
 
 export interface Config {
-    traceFetchCalls: boolean;
-    debugFetchCalls: boolean;
+    traceFetchCalls?: boolean;
+    debugFetchCalls?: boolean;
+    infoFetchCalls?: boolean;
     searchParameterCaseInsensitiveSupported?: boolean;
     identifierModifierSupported?: boolean;
     absoluteUrlReferencesSupported?: boolean;

@@ -60,6 +60,10 @@ The `config.ts` file contains the following settings:
 - `httpSupported`: Set to `true` if your server supports HTTP (non-HTTPS) connections
 - `defaultPageSize`: The default page size for paginated responses
 - `paginationSupported`: Set to `true` if your server supports pagination
+- `serverTimeZone`: The time zone of your FHIR server
+- `transactionSupported`: Set to `true` if your server supports transactions
+
+Please see additional configuration options in the `src/tests/types.ts` file.
 
 ### Important Note on `authServerUrl` and `fhirServerUrl`
 

@@ -1,4 +1,3 @@
-import { Bundle } from "npm:@types/fhir";
 import { CONFIG } from "../config.ts";
 import { IFetchOptions, IFetchResponse, ITestContext } from "../types.ts";
 import { recordHttpInteraction } from "./bdd/mod.ts";
@@ -26,6 +25,8 @@ export async function fetchWrapper(
         logLevel = "trace";
     } else if (CONFIG.debugFetchCalls) {
         logLevel = "debug";
+    } else if (CONFIG.infoFetchCalls) {
+        logLevel = "info";
     }
     if (logLevel && relativeTargetUrl.indexOf("_loglevel") === -1) {
         if (relativeTargetUrl.indexOf("?") !== -1) {

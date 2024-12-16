@@ -1,2 +1,3 @@
 .idea
+src/tests/config.ts
 src/config.ts

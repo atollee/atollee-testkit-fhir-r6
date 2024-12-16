@@ -6,8 +6,8 @@
     "fhirpath": "npm:fhirpath@^3.15.0",
     "luxon": "npm:luxon@^3.5.0"
   },
-  "compilerOptions": {
-    "experimentalDecorators": true
+  "fmt": {
+    "indentWidth": 4
   },
   "tasks": {
     "test:restful": "deno test --allow-all --trace-leaks ./src/runner.ts -- -t restful",
