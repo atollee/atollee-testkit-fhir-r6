@@ -29,11 +29,7 @@ This kit includes a broad array of capabilities, such as:
    git clone https://github.com/atollee/atollee-testkit-fhir-r6.git
    cd atollee-testkit-fhir-r6
    ```
-2. Create a `config.ts` file:
-   ```
-   cp src/tests/config.dist.ts src/tests/config.ts
-   ```
-3. Edit `config.ts` with your server details and OAuth credentials.
+2. Edit `config.ts` with your server details and OAuth credentials.
    ```
    nano src/tests/config.ts
    ```
