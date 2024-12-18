@@ -29,19 +29,17 @@ This kit includes a broad array of capabilities, such as:
    git clone https://github.com/atollee/atollee-testkit-fhir-r6.git
    cd atollee-testkit-fhir-r6
    ```
-2. Edit `config.ts` with your server details and OAuth credentials. You can use any text editor of your choice. For example:
-   ```
-   nano src/tests/config.ts
-   ```
-## Configuration
+2. Edit config.ts with your server details and OAuth credentials. You can use any text editor of your choice. For example:
 
-The `config.ts` file includes settings like:
+   ### Configuration
 
-- OAuth details (`clientId`, `clientSecret`, `scope`, `redirectUri`, etc.)
-- FHIR server details (`fhirServerUrl`, `validPatientId`, etc.)
-- Supported features (`xmlSupported`, `paginationSupported`, etc.)
+   The `config.ts` file includes settings like:
 
-Refer to `src/tests/types.ts` for detailed options.
+   - OAuth details (`clientId`, `clientSecret`, `scope`, `redirectUri`, etc.)
+   - FHIR server details (`fhirServerUrl`, `validPatientId`, etc.)
+   - Supported features (`xmlSupported`, `paginationSupported`, etc.)
+
+   Refer to `src/tests/types.ts` for detailed options.
 
 ## OAuth Authentication
 
