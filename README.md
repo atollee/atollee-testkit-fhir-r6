@@ -1,5 +1,7 @@
 # atollee FHIR R6 (Preview) Server Testkit
 
+v0.2.1
+
 This kit provides a comprehensive suite of tests for FHIR implementations, featuring OAuth 2.0 authentication, FHIR interactions, and configurable settings. It helps implementers ensure compliance with the FHIR R6 Ballot (2nd Draft) specification and follow best practices.
 
 ## Features
