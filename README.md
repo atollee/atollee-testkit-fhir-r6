@@ -27,7 +27,7 @@ This kit includes a broad array of capabilities, such as:
 1. Clone the repository:
    ```
    git clone https://github.com/atollee/atollee-testkit-fhir-r6.git
-   cd fhir-rest-testkit
+   cd atollee-testkit-fhir-r6
    ```
 2. Create a `config.ts` file:
    ```
