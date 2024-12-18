@@ -57,6 +57,7 @@ Below are test command comparisons for `restful` and `search` test categories:
 |---------------------------------------------|--------------------------------------------|
 | *(Optional)* `deno task test:restful:init`  | *(Optional)* `deno task test:search:init`  |
 | `deno task test:restful`                    | `deno task test:search`                   |
+
  **More options, if needed:**                                                            
 | `deno task test:restful:junit`              | `deno task test:search:junit`             |
 | `deno task test:restful:json`               | `deno task test:search:json`              |
