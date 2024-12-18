@@ -41,10 +41,8 @@ This kit includes a broad array of capabilities, such as:
    - Supported features (`xmlSupported`, `paginationSupported`, etc.)
 
    Refer to `src/tests/types.ts` for detailed options.
-
-## OAuth Authentication
-
-Browser automation supports OAuth login flows, including Keycloak and similar systems. Update `test/utils/oauth.ts` if adjustments are needed for specific forms.
+   
+   Modify `src/tests/utils/oauth.ts`  if changes are required for specific forms. The browser automation supports OAuth login flows, such as those used by Keycloak and similar systems.
 
 ## Running the Tests
 
