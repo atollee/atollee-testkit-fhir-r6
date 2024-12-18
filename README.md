@@ -41,9 +41,7 @@ This kit includes a broad array of capabilities, such as:
    - Supported features (`xmlSupported`, `paginationSupported`, etc.)
 
    Refer to `src/tests/types.ts` for detailed options.
-
-   Update the `test/utils/oauth.ts` file if modifications are required for specific OAuth login flows.
-   The current implementation supports browser-automated OAuth login flows, including Keycloak and similar systems. This functionality is powered by [Puppeteer](https://pptr.dev), which launches a browser such as Chrome or Firefox to perform the login process.
+   Update the `test/utils/oauth.ts` file if modifications are required for specific login flows. The current implementation supports browser-automated authentication, including Keycloak and similar systems. This functionality is powered by [Puppeteer](https://pptr.dev), which launches a browser such as Chrome or Firefox to perform the process.
 
 
 ## Running the Tests
