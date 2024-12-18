@@ -1,5 +1,8 @@
 import { Config } from "./types.ts";
 
+const DEBUG_FETCH_CALLS = false;
+const TRACE_FETCH_CALLS = false;
+
 export const CONFIG: Config = {
     // client id from configured oauth server
     clientId: "",
@@ -27,4 +30,6 @@ export const CONFIG: Config = {
     password: "password",
     serverTimeZone: "Europe/Berlin",
     transactionSupported: false,
+    traceFetchCalls: TRACE_FETCH_CALLS,
+    debugFetchCalls: DEBUG_FETCH_CALLS,
 };
