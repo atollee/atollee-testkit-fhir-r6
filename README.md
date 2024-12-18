@@ -63,7 +63,7 @@ Below are test command comparisons for `restful` and `search` test categories:
 
 ## Test Categories
 
-The testkit aims to provide as complete coverage as possible of the [HL7 FHIR RESTful API (3.2.0)](https://hl7.org/fhir/6.0.0-ballot2/http.html) and [Search (3.2.1)](https://hl7.org/fhir/6.0.0-ballot2/search.html) sections of the specification.
+The testkit aims to provide as complete coverage as possible of the [HL7 FHIR RESTful API (3.2.0)](https://hl7.org/fhir/6.0.0-ballot2/http.html) and [Search (3.2.1)](https://hl7.org/fhir/6.0.0-ballot2/search.html) sections of the specification. This coverage can be expanded and is continuously improved by atollee to include additional aspects over time.
 
 ## Contributing
 
