@@ -29,7 +29,7 @@ This kit includes a broad array of capabilities, such as:
    git clone https://github.com/atollee/atollee-testkit-fhir-r6.git
    cd atollee-testkit-fhir-r6
    ```
-2. Edit `config.ts` with your server details and OAuth credentials.
+2. Edit `config.ts` with your server details and OAuth credentials. You can use any text editor of your choice. For example:
    ```
    nano src/tests/config.ts
    ```
