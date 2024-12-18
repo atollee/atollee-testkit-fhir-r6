@@ -57,9 +57,7 @@ Below are test command comparisons for `restful` and `search` test categories:
 |---------------------------------------------|--------------------------------------------|
 | `deno task test:restful`                    | `deno task test:search`                   |
 
-**More available tasks, if needed:** See `deno task` for a full list of options.
-
-
+**Additional tasks available:** Run `deno task` to view all available options.
 
 
 ## Test Categories
