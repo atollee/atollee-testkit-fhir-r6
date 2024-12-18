@@ -34,7 +34,9 @@ This kit includes a broad array of capabilities, such as:
    cp src/tests/config.dist.ts src/tests/config.ts
    ```
 3. Edit `config.ts` with your server details and OAuth credentials.
-
+   ```
+   nano src/tests/config.ts
+   ```
 ## Configuration
 
 The `config.ts` file includes settings like:
