@@ -11,9 +11,9 @@ export const CONFIG: Config = {
     scope: "patient/*.read patient/*.write launch/patient",
     // callback url to receive oauth
     redirectUri: "",
-    // r4 server url (for authentication requests)
+    // R6 server url (for authentication requests)
     authServerUrl: "",
-    // r4 server url (for all other requests)
+    // R6 server url (for all other requests)
     fhirServerUrl: "",
     validPatientId: "355",
     writableValidPatientId: "88",
