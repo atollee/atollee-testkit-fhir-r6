@@ -1,4 +1,4 @@
-# atollee FHIR R6 (Preview) Server Testkit
+# atollee Testkit for FHIR R6 (Preview) Server 
 
 v0.2.1
 
