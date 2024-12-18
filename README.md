@@ -33,8 +33,6 @@ This kit includes a broad array of capabilities, such as:
    ```
    nano src/tests/config.ts
    ```
-   
-   ### Configuration
 
    The `config.ts` file includes settings like:
 
