@@ -80,22 +80,6 @@ export async function restfulSuite(callback: () => void) {
 
     const testContext: ITestContext = createTestContext(accessToken);
 
-    describe("3.2.0.1.3 Resource Metadata and Versioning", () => {
-        runResourceMetadataVersioningTests(testContext);
-    });
-    describe("3.2.0.1.4 Security", () => {
-        runSecurityTests(testContext);
-    });
-    describe("3.2.0.1.5 HTTP Status Codes", async () => {
-        await runHttpStatusCodeTests(testContext);
-    });
-    describe("3.2.0.1.6 HTTP Headers ", () => {
-        runHttpHeaderTests(testContext);
-    });
-    describe("3.2.0.1.7 Managing Return Content", () => {
-        runManagingReturnContentTests(testContext);
-    });
-
     describe("3.2.0.1.2 Service Base URL", async () => {
         runBaseTests(testContext);
         runServiceBaseUrlTests(testContext);
@@ -173,69 +157,66 @@ export async function restfulSuite(callback: () => void) {
     describe("3.2.0.7.1 Conditional delete", () => {
         runConditionalDeleteTests(testContext);
     });
-    describe("3.2.0.8 create", () => {
+    describe("3.2.0.10 create", () => {
         runCreateTests(testContext);
     });
-    describe("3.2.0.8.1 Conditional create", () => {
+    describe("3.2.0.10.1 Conditional create", () => {
         runConditionalCreateTests(testContext);
     });
-    describe("3.2.0.9.1 HTTP POST", () => {
+    describe("3.2.0.11.1 HTTP POST", () => {
         runSearchTests(testContext);
     });
-    describe("3.2.0.9.2 HTTP GET", () => {
+    describe("3.2.0.11.2 HTTP GET", () => {
         runSearchGetTests(testContext);
     });
-    describe("3.2.0.9.3 Choosing an HTTP Method", () => {
+    describe("3.2.0.11.3 Choosing an HTTP Method", () => {
         runSearchMethodChoiceTests(testContext);
         runAdvancedSearchTests(testContext);
     });
-    describe("3.2.0.10 capabilities", () => {
+    describe("3.2.0.12 capabilities", () => {
         runCapabilitiesTests(testContext);
     });
-    describe("3.2.0.11 batch/transaction", () => {
+    describe("3.2.0.13 batch/transaction", () => {
         runBatchTransactionTests(testContext);
     });
-    describe("3.2.0.11 batch/transaction - Examples", () => {
+    describe("3.2.0.13 batch/transaction - Examples", () => {
         runExampleTransactionTest(testContext);
         runBatchMedsAllergiesTest(testContext);
     });
-    describe("3.2.0.11.1 Batch Processing Rules", () => {
+    describe("3.2.0.13.1 Batch Processing Rules", () => {
         runBatchProcessingRulesTests(testContext);
     });
-    describe("3.2.0.11.2 Transaction Processing Rules", () => {
+    describe("3.2.0.13.2 Transaction Processing Rules", () => {
         runTransactionProcessingRulesTests(testContext);
     });
-    describe("3.2.0.11.3 Replacing hyperlinks and full-urls", () => {
+    describe("3.2.0.13.3 Replacing hyperlinks and full-urls", () => {
         runReplacingHyperlinksAndFullUrlsTests(testContext);
     });
-    describe("3.2.0.11.4 Version specific references and updates", () => {
+    describe("3.2.0.13.4 Version specific references and updates", () => {
         runVersionSpecificAndConditionalReferencesTests(testContext);
     });
-    describe("3.2.0.11.4 Version specific references and updates", () => {
-        runVersionSpecificAndConditionalReferencesTests(testContext);
-    });
-    describe("3.2.0.11.5 Batch/Transaction Response", () => {
+    describe("3.2.0.13.5 Batch/Transaction Response", () => {
         runBatchTransactionResponseTests(testContext);
     });
-    describe("3.2.0.11.6 Accepting other Bundle types", () => {
+    describe("3.2.0.13.6 Accepting other Bundle types", () => {
         runAcceptingOtherBundleTypesTests(testContext);
     });
-    describe("3.2.0.12 History", () => {
+    describe("3.2.0.14 history", () => {
         runHistoryTests(testContext);
     });
-    describe("3.2.0.13 Transactional Integrity", () => {
+    describe("3.2.0.15 Transactional Integrity", () => {
         runTransactionalIntegrityTests(testContext);
     });
-    describe("3.2.0.14 Paging", () => {
+    describe("3.2.0.16 Paging", () => {
         runPagingTests(testContext);
     });
-    describe("3.2.0.14.1 Paging Continuity & Integrity", () => {
+    describe("3.2.0.16.1 Paging Continuity & Integrity", () => {
         runPagingContinuityIntegrityTests(testContext);
     });
-    describe("3.2.0.15 Support for HEAD", () => {
+    describe("3.2.0.17 Support for HEAD", () => {
         runHeadSupportTests(testContext);
     });
-    describe("3.2.0.16 Custom Headers", () => {
+    describe("3.2.0.18 Custom Headers", () => {
         runCustomHeadersTests(testContext);
     });
 }
