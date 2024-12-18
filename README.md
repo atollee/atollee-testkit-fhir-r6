@@ -42,7 +42,9 @@ This kit includes a broad array of capabilities, such as:
 
    Refer to `src/tests/types.ts` for detailed options.
    
-   Update the `test/utils/oauth.ts` file if modifications are required for specific login flows. The current implementation supports browser-automated authentication, including Keycloak and similar systems. This functionality is powered by [Puppeteer](https://pptr.dev), which launches a browser such as Chrome or Firefox to perform the process.
+3. Only if changes are required for specific OAuth login flows, modify the `test/utils/oauth.ts` file.
+
+   The current implementation supports browser-automated authentication, including Keycloak and similar systems. This functionality uses [Puppeteer](https://pptr.dev) to launch a browser, such as Chrome or Firefox, to complete the process.
 
 
 ## Running the Tests
