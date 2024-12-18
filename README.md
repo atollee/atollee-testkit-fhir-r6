@@ -30,7 +30,10 @@ This kit includes a broad array of capabilities, such as:
    cd atollee-testkit-fhir-r6
    ```
 2. Edit config.ts with your server details and OAuth credentials. You can use any text editor of your choice. For example:
-
+   ```
+   nano src/tests/config.ts
+   ```
+   
    ### Configuration
 
    The `config.ts` file includes settings like:
