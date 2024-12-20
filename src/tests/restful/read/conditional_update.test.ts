@@ -4,23 +4,26 @@ import { fetchWrapper } from "../../utils/fetch.ts";
 import { ITestContext } from "../../types.ts";
 import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
 import { Patient } from "npm:@types/fhir/r4.d.ts";
-import { createTestPatient } from "../../utils/resource_creators.ts";
+import {
+    createTestPatient,
+    uniqueString,
+} from "../../utils/resource_creators.ts";
 
 export function runConditionalUpdateTests(context: ITestContext) {
     it("Conditional Update - No matches, create new resource", async () => {
         const value = Date.now();
+        const systemUrl = uniqueString("http://example.com/identifier");
         const newPatient: Patient = {
             resourceType: "Patient",
             name: [{ family: "Doe", given: ["John"] }],
             identifier: [{
-                system: "http://example.com/identifier",
+                system: systemUrl,
                 value: `${value}`,
             }],
         };
         const response = await fetchWrapper({
             authorized: true,
-            relativeUrl:
-                `Patient?identifier=http://example.com/identifier|${value}`,
+            relativeUrl: `Patient?identifier=${systemUrl}|${value}`,
             method: "PUT",
             body: JSON.stringify(newPatient),
         });

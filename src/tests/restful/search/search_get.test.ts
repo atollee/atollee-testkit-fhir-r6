@@ -159,23 +159,26 @@ export function runSearchGetTests(context: ITestContext) {
         );
     });
 
-    it("Search GET - With invalid parameters", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: "Patient?invalid_param=value",
-        });
+    if (context.isLenientSearchHandlingSupported()) {
+        it("Search GET - With invalid parameters", async () => {
+            const response = await fetchWrapper({
+                authorized: true,
+                relativeUrl: "Patient?invalid_param=value",
+                headers: { "Prefer": "handling=strict" },
+            });
 
-        assertEquals(
-            response.success,
-            false,
-            "Search with invalid parameters should fail",
-        );
-        assertEquals(
-            response.status,
-            400,
-            "Should return 400 Bad Request for invalid parameters",
-        );
-    });
+            assertEquals(
+                response.success,
+                false,
+                "Search with invalid parameters should fail",
+            );
+            assertEquals(
+                response.status,
+                400,
+                "Should return 400 Bad Request for invalid parameters",
+            );
+        });
+    }
 
     it("Search GET - With unsupported _format", async () => {
         const response = await fetchWrapper({

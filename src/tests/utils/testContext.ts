@@ -122,5 +122,6 @@ export function createTestContext(
             return newUrl;
         },
         areTransactionSupported: () => CONFIG.transactionSupported ?? true,
+        isAuthorizedSupported: () => CONFIG.authorized ?? true,
     };
 }

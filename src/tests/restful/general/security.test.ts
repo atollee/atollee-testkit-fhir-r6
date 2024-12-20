@@ -66,42 +66,44 @@ export function runSecurityTests(context: ITestContext) {
         );
     });
 
-    it("Security - Authentication Required", async () => {
-        const patient = await createTestPatient(context);
-        const validPatientId = patient.id;
+    if (context.isAuthorizedSupported()) {
+        it("Security - Authentication Required", async () => {
+            const patient = await createTestPatient(context);
+            const validPatientId = patient.id;
 
-        const unauthenticatedResponse = await fetchWrapper({
-            authorized: false,
-            relativeUrl: `Patient/${validPatientId}`,
+            const unauthenticatedResponse = await fetchWrapper({
+                authorized: false,
+                relativeUrl: `Patient/${validPatientId}`,
+            });
+
+            // deno-lint-ignore no-explicit-any
+            const body = unauthenticatedResponse.jsonBody as any;
+            assertEquals(
+                unauthenticatedResponse.success,
+                false,
+                "Unauthenticated request should fail",
+            );
+            assertEquals(
+                body.issue?.[0]?.code,
+                "security",
+                "Error should indicate a security issue",
+            );
+            assertEquals(
+                unauthenticatedResponse.status,
+                401,
+                "Http Response should indicate authentication error",
+            );
+
+            const authenticatedResponse = await fetchWrapper({
+                authorized: true,
+                relativeUrl: `Patient/${validPatientId}`,
+            });
+
+            assertEquals(
+                authenticatedResponse.success,
+                true,
+                "Authenticated request should succeed",
+            );
         });
-
-        // deno-lint-ignore no-explicit-any
-        const body = unauthenticatedResponse.jsonBody as any;
-        assertEquals(
-            unauthenticatedResponse.success,
-            false,
-            "Unauthenticated request should fail",
-        );
-        assertEquals(
-            body.issue?.[0]?.code,
-            "security",
-            "Error should indicate a security issue",
-        );
-        assertEquals(
-            unauthenticatedResponse.status,
-            401,
-            "Http Response should indicate authentication error",
-        );
-
-        const authenticatedResponse = await fetchWrapper({
-            authorized: true,
-            relativeUrl: `Patient/${validPatientId}`,
-        });
-
-        assertEquals(
-            authenticatedResponse.success,
-            true,
-            "Authenticated request should succeed",
-        );
-    });
+    }
 }

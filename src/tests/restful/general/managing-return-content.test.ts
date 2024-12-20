@@ -112,7 +112,8 @@ export function runManagingReturnContentTests(context: ITestContext) {
     });
 
     it("Managing Return Content - Return OperationOutcome on update", async () => {
-        const validPatientId = context.getValidPatientId();
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         const updatedPatientData = {
             resourceType: "Patient",
             id: validPatientId,

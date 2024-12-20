@@ -1,6 +1,6 @@
 // tests/update.test.ts
 
-import { fetchWrapper } from "../../utils/fetch.ts";
+import { fetchSearchWrapper, fetchWrapper } from "../../utils/fetch.ts";
 import { ITestContext } from "../../types.ts";
 import {
     assertEquals,
@@ -359,8 +359,9 @@ export function runUpdateTests(context: ITestContext) {
     });
 
     it("update - Handle SUBSETTED resource", async () => {
+        await createTestPatient(context);
         // First, perform a search that returns a SUBSETTED resource
-        const searchResponse = await fetchWrapper({
+        const searchResponse = await fetchSearchWrapper({
             authorized: true,
             relativeUrl: "Patient?_elements=id,active",
         });

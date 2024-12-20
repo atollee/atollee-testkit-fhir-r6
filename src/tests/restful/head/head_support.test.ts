@@ -8,10 +8,12 @@ import {
     assertNotExists,
     it,
 } from "../../../../deps.test.ts";
+import { createTestPatient } from "../../utils/resource_creators.ts";
 
 export function runHeadSupportTests(context: ITestContext) {
     it("HEAD - Read interaction", async () => {
-        const patientId = context.getValidPatientId();
+        const validPatient = await createTestPatient(context);
+        const patientId = validPatient.id;
         const getResponse = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${patientId}`,

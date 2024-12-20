@@ -3,32 +3,39 @@
 import { fetchWrapper } from "../../utils/fetch.ts";
 import { ITestContext } from "../../types.ts";
 import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { Patient, Parameters } from "npm:@types/fhir/r4.d.ts";
+import { Parameters, Patient } from "npm:@types/fhir/r4.d.ts";
+import { createTestPatient } from "../../utils/resource_creators.ts";
 
 export function runPatchTests(context: ITestContext) {
-    const validPatientId = context.getValidPatientId();
-
     it("Patch - JSON Patch", async () => {
         const newPatient = {
             resourceType: "Patient",
             name: [{ family: "Test", given: ["Create"] }],
             telecom: [],
-            active: false
+            active: false,
         };
         const initialResponse = await fetchWrapper({
             authorized: true,
             relativeUrl: "Patient",
             method: "POST",
-            body: JSON.stringify(newPatient)
+            body: JSON.stringify(newPatient),
         });
 
-        assertEquals(initialResponse.success, true, "succeeded in creating a new patient");
+        assertEquals(
+            initialResponse.success,
+            true,
+            "succeeded in creating a new patient",
+        );
         const initialPatient = initialResponse.jsonBody as Patient;
         const etag = initialResponse.headers.get("ETag");
 
         const jsonPatch = [
             { op: "replace", path: "/active", value: !initialPatient.active },
-            { op: "add", path: "/telecom/0", value: { system: "phone", value: "555-1234" } },
+            {
+                op: "add",
+                path: "/telecom/0",
+                value: { system: "phone", value: "555-1234" },
+            },
         ];
 
         const patchResponse = await fetchWrapper({
@@ -41,16 +48,34 @@ export function runPatchTests(context: ITestContext) {
             },
             body: JSON.stringify(jsonPatch),
         });
-        assertEquals(patchResponse.success, true, "JSON Patch should be successful");
-        assertEquals(patchResponse.status, 200, "Should return 200 OK for successful patch");
+        assertEquals(
+            patchResponse.success,
+            true,
+            "JSON Patch should be successful",
+        );
+        assertEquals(
+            patchResponse.status,
+            200,
+            "Should return 200 OK for successful patch",
+        );
 
         const patchedPatient = patchResponse.jsonBody as Patient;
-        assertEquals(patchedPatient.active, !initialPatient.active, "Active status should be toggled");
+        assertEquals(
+            patchedPatient.active,
+            !initialPatient.active,
+            "Active status should be toggled",
+        );
         assertExists(patchedPatient.telecom?.[0], "Telecom should be added");
-        assertEquals(patchedPatient.telecom?.[0].value, "555-1234", "Phone number should be added");
+        assertEquals(
+            patchedPatient.telecom?.[0].value,
+            "555-1234",
+            "Phone number should be added",
+        );
     });
 
     it("Patch - XML Patch", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
         // First, get the current version
         const initialResponse = await fetchWrapper({
             authorized: true,
@@ -86,8 +111,16 @@ export function runPatchTests(context: ITestContext) {
         });
 
         if (context.isXmlSupported()) {
-            assertEquals(patchResponse.success, true, "XML Patch should be successful");
-            assertEquals(patchResponse.status, 200, "Should return 200 OK for successful patch");
+            assertEquals(
+                patchResponse.success,
+                true,
+                "XML Patch should be successful",
+            );
+            assertEquals(
+                patchResponse.status,
+                200,
+                "Should return 200 OK for successful patch",
+            );
 
             // Fetch the updated resource to verify changes
             const updatedResponse = await fetchWrapper({
@@ -96,10 +129,21 @@ export function runPatchTests(context: ITestContext) {
             });
 
             const updatedPatient = updatedResponse.jsonBody as Patient;
-            assertEquals(updatedPatient.active, false, "Active status should be set to false");
-            assertExists(updatedPatient.telecom?.find(t => t.value === "555-5678"), "New phone number should be added");
+            assertEquals(
+                updatedPatient.active,
+                false,
+                "Active status should be set to false",
+            );
+            assertExists(
+                updatedPatient.telecom?.find((t) => t.value === "555-5678"),
+                "New phone number should be added",
+            );
         } else {
-            assertEquals(patchResponse.success, false, "XML is not supported, so XML Patch needs to fail");
+            assertEquals(
+                patchResponse.success,
+                false,
+                "XML is not supported, so XML Patch needs to fail",
+            );
         }
     });
 
@@ -109,16 +153,20 @@ export function runPatchTests(context: ITestContext) {
             resourceType: "Patient",
             name: [{ family: "Test", given: ["Create"] }],
             telecom: [{}],
-            active: false
+            active: false,
         };
         const initialResponse = await fetchWrapper({
             authorized: true,
             relativeUrl: "Patient",
             method: "POST",
-            body: JSON.stringify(newPatient)
+            body: JSON.stringify(newPatient),
         });
 
-        assertEquals(initialResponse.success, true, "succeeded in creating a new patient");
+        assertEquals(
+            initialResponse.success,
+            true,
+            "succeeded in creating a new patient",
+        );
 
         const initialPatient = initialResponse.jsonBody as Patient;
         const etag = initialResponse.headers.get("ETag");
@@ -162,15 +210,32 @@ export function runPatchTests(context: ITestContext) {
             body: JSON.stringify(fhirPathPatch),
         });
 
-        assertEquals(patchResponse.success, true, "FHIRPath Patch should be successful");
-        assertEquals(patchResponse.status, 200, "Should return 200 OK for successful patch");
+        assertEquals(
+            patchResponse.success,
+            true,
+            "FHIRPath Patch should be successful",
+        );
+        assertEquals(
+            patchResponse.status,
+            200,
+            "Should return 200 OK for successful patch",
+        );
 
         const patchedPatient = patchResponse.jsonBody as Patient;
-        assertEquals(patchedPatient.active, true, "Active status should be set to true");
-        assertExists(patchedPatient.telecom?.find(t => t.value === "test@example.com"), "Email should be added");
+        assertEquals(
+            patchedPatient.active,
+            true,
+            "Active status should be set to true",
+        );
+        assertExists(
+            patchedPatient.telecom?.find((t) => t.value === "test@example.com"),
+            "Email should be added",
+        );
     });
 
     it("Patch - Version conflict", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
         // First, get the current version
         await fetchWrapper({
             authorized: true,
@@ -194,11 +259,21 @@ export function runPatchTests(context: ITestContext) {
             body: JSON.stringify(jsonPatch),
         });
 
-        assertEquals(patchResponse.success, false, "Patch with outdated ETag should fail");
-        assertEquals(patchResponse.status, 412, "Should return 412 Precondition Failed for version conflict");
+        assertEquals(
+            patchResponse.success,
+            false,
+            "Patch with outdated ETag should fail",
+        );
+        assertEquals(
+            patchResponse.status,
+            412,
+            "Should return 412 Precondition Failed for version conflict",
+        );
     });
 
     it("Patch - Invalid patch document", async () => {
+        const validPatient = await createTestPatient(context);
+        const validPatientId = validPatient.id;
         const invalidJsonPatch = [
             { op: "invalid", path: "/active", value: true },
         ];
@@ -213,7 +288,15 @@ export function runPatchTests(context: ITestContext) {
             body: JSON.stringify(invalidJsonPatch),
         });
 
-        assertEquals(patchResponse.success, false, "Patch with invalid operation should fail");
-        assertEquals(patchResponse.status, 422, "Should return 422 Unprocessable Entity for invalid patch document");
+        assertEquals(
+            patchResponse.success,
+            false,
+            "Patch with invalid operation should fail",
+        );
+        assertEquals(
+            patchResponse.status,
+            422,
+            "Should return 422 Unprocessable Entity for invalid patch document",
+        );
     });
 }

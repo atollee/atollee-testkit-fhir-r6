@@ -7,12 +7,9 @@ import { assertEquals, assertTrue, it } from "../../../../deps.test.ts";
 import { createTestPatient } from "../../utils/resource_creators.ts";
 
 // 3.2.0.1.2 Service Base URL (identity part)
-export async function runServiceBaseUrlIdentityTests(context: ITestContext) {
-    const baseUrl = context.getBaseUrl();
-    const patient = await createTestPatient(context);
-    const patientId = patient.id;
-
+export function runServiceBaseUrlIdentityTests(context: ITestContext) {
     it("Identity - Query Parameter Ignored", async () => {
+        const patient = await createTestPatient(context);
         const responseWithoutQuery = await fetchWrapper({
             authorized: true,
             relativeUrl: `Patient/${patient.id}`,
@@ -50,6 +47,8 @@ export async function runServiceBaseUrlIdentityTests(context: ITestContext) {
     });
 
     it("Identity - Case Sensitivity", async () => {
+        const patient = await createTestPatient(context);
+        const patientId = patient.id;
         const lowerCaseResponse = await fetchWrapper({
             authorized: true,
             relativeUrl: `patient/${patientId}`,
@@ -73,6 +72,9 @@ export async function runServiceBaseUrlIdentityTests(context: ITestContext) {
     });
 
     it("Identity - HTTP and HTTPS Protocols", async () => {
+        const patient = await createTestPatient(context);
+        const patientId = patient.id;
+        const baseUrl = context.getBaseUrl();
         // Note: This test assumes your server supports both HTTP and HTTPS
         // You may need to adjust this based on your server configuration
         const httpResponse = await fetchWrapper({

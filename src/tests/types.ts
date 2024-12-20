@@ -83,6 +83,8 @@ export interface IFetchOptions extends RequestInit {
     relativeUrl: string;
     overrideBaseUrl?: string;
     body?: string | undefined;
+    doNotRecord?: boolean;
+    enforceTrace?: boolean;
 }
 
 export interface IFetchResponse {
@@ -96,6 +98,7 @@ export interface IFetchResponse {
 }
 
 export interface ITestContext {
+    isAuthorizedSupported(): boolean;
     createRelativeUrl(url: string): string;
     isSearchParameterCaseInsensitiveSupported(): boolean;
     isIdentifierModifierSupported(): boolean;

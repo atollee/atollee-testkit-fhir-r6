@@ -157,24 +157,26 @@ export function runHttpStatusCodeTests(context: ITestContext) {
         );
     });
 
-    it("HTTP Status Codes - 401 Forbidden for unauthorized access", async () => {
-        const patient = await createTestPatient(context);
-        const validPatientId = patient.id;
+    if (context.isAuthorizedSupported()) {
+        it("HTTP Status Codes - 401 Forbidden for unauthorized access", async () => {
+            const patient = await createTestPatient(context);
+            const validPatientId = patient.id;
 
-        const response = await fetchWrapper({
-            authorized: false, // Attempting access without authorization
-            relativeUrl: `Patient/${validPatientId}`,
+            const response = await fetchWrapper({
+                authorized: false, // Attempting access without authorization
+                relativeUrl: `Patient/${validPatientId}`,
+            });
+
+            assertEquals(
+                response.success,
+                false,
+                "Unauthorized access should fail",
+            );
+            assertEquals(
+                response.status,
+                401,
+                "Unauthorized access should return 403 Forbidden",
+            );
         });
-
-        assertEquals(
-            response.success,
-            false,
-            "Unauthorized access should fail",
-        );
-        assertEquals(
-            response.status,
-            401,
-            "Unauthorized access should return 403 Forbidden",
-        );
-    });
+    }
 }

@@ -54,6 +54,7 @@ export function runUpdateAsCreateTests(context: ITestContext) {
     });
 
     it("Update as Create - Client-defined ID", async () => {
+        const baseUrl = context.getBaseUrl();
         const clientDefinedId = `valid-patient-id-${Date.now()}`;
         const newPatient: Patient = {
             resourceType: "Patient",

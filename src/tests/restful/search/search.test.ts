@@ -225,28 +225,31 @@ export function runSearchTests(context: ITestContext) {
         );
     });
 
-    it("Search - POST with invalid parameters", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: "Patient/_search",
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: "invalid_param=value",
-        });
+    if (context.isLenientSearchHandlingSupported()) {
+        it("Search - POST with invalid parameters", async () => {
+            const response = await fetchWrapper({
+                authorized: true,
+                relativeUrl: "Patient/_search",
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Prefer": "handling=strict",
+                },
+                body: "invalid_param=value",
+            });
 
-        assertEquals(
-            response.success,
-            false,
-            "Search with invalid parameters should fail",
-        );
-        assertEquals(
-            response.status,
-            400,
-            "Should return 400 Bad Request for invalid parameters",
-        );
-    });
+            assertEquals(
+                response.success,
+                false,
+                "Search with invalid parameters should fail",
+            );
+            assertEquals(
+                response.status,
+                400,
+                "Should return 400 Bad Request for invalid parameters",
+            );
+        });
+    }
 
     it("Search - POST with unsupported _format", async () => {
         const response = await fetchWrapper({

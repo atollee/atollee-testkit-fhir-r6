@@ -10,7 +10,10 @@ export function runConditionalCreateTests(_context: ITestContext) {
         const uniqueIdentifier = `unique-${Date.now()}`;
         const newPatient: Patient = {
             resourceType: "Patient",
-            identifier: [{ system: "http://example.com/identifier", value: uniqueIdentifier }],
+            identifier: [{
+                system: "http://example.com/identifier",
+                value: uniqueIdentifier,
+            }],
             name: [{ family: "Test", given: ["Conditional"] }],
         };
 
@@ -24,10 +27,24 @@ export function runConditionalCreateTests(_context: ITestContext) {
             body: JSON.stringify(newPatient),
         });
 
-        assertEquals(response.success, true, "Conditional create with no matches should be successful");
-        assertEquals(response.status, 201, "Should return 201 Created for successful creation");
-        assertExists(response.headers.get("Location"), "Should return a Location header");
-        assertExists(response.headers.get("ETag"), "Should return an ETag header");
+        assertEquals(
+            response.success,
+            true,
+            "Conditional create with no matches should be successful",
+        );
+        assertEquals(
+            response.status,
+            201,
+            "Should return 201 Created for successful creation",
+        );
+        assertExists(
+            response.headers.get("Location"),
+            "Should return a Location header",
+        );
+        assertExists(
+            response.headers.get("ETag"),
+            "Should return an ETag header",
+        );
 
         const createdPatient = response.jsonBody as Patient;
         assertExists(createdPatient.id, "Created resource should have an id");
@@ -38,7 +55,10 @@ export function runConditionalCreateTests(_context: ITestContext) {
         const existingIdentifier = `existing-${Date.now()}`;
         const existingPatient: Patient = {
             resourceType: "Patient",
-            identifier: [{ system: "http://example.com/identifier", value: existingIdentifier }],
+            identifier: [{
+                system: "http://example.com/identifier",
+                value: existingIdentifier,
+            }],
             name: [{ family: "Existing", given: ["Patient"] }],
         };
 
@@ -52,7 +72,10 @@ export function runConditionalCreateTests(_context: ITestContext) {
         // Now, try to conditionally create the same patient
         const newPatient: Patient = {
             resourceType: "Patient",
-            identifier: [{ system: "http://example.com/identifier", value: existingIdentifier }],
+            identifier: [{
+                system: "http://example.com/identifier",
+                value: existingIdentifier,
+            }],
             name: [{ family: "New", given: ["Patient"] }],
         };
 
@@ -66,13 +89,31 @@ export function runConditionalCreateTests(_context: ITestContext) {
             body: JSON.stringify(newPatient),
         });
 
-        assertEquals(response.success, true, "Conditional create with one match should be successful");
-        assertEquals(response.status, 200, "Should return 200 OK for existing resource");
-        assertExists(response.headers.get("Location"), "Should return a Location header");
-        assertExists(response.headers.get("ETag"), "Should return an ETag header");
+        assertEquals(
+            response.success,
+            true,
+            "Conditional create with one match should be successful",
+        );
+        assertEquals(
+            response.status,
+            200,
+            "Should return 200 OK for existing resource",
+        );
+        assertExists(
+            response.headers.get("Location"),
+            "Should return a Location header",
+        );
+        assertExists(
+            response.headers.get("ETag"),
+            "Should return an ETag header",
+        );
 
         const returnedPatient = response.jsonBody as Patient;
-        assertEquals(returnedPatient.name?.[0].family, "Existing", "Should return the existing patient, not create a new one");
+        assertEquals(
+            returnedPatient.name?.[0].family,
+            "Existing",
+            "Should return the existing patient, not create a new one",
+        );
     });
 
     it("Conditional Create - Multiple matches", async () => {
@@ -80,8 +121,11 @@ export function runConditionalCreateTests(_context: ITestContext) {
         const commonIdentifier = `common-${Date.now()}`;
         const patient: Patient = {
             resourceType: "Patient",
-            identifier: [{system: "http://example.com/identifier", value: commonIdentifier}],
-            name: [{family: "Common", given: ["Patient"]}],
+            identifier: [{
+                system: "http://example.com/identifier",
+                value: commonIdentifier,
+            }],
+            name: [{ family: "Common", given: ["Patient"] }],
         };
 
         const patient1Response = await fetchWrapper({
@@ -103,8 +147,11 @@ export function runConditionalCreateTests(_context: ITestContext) {
         // Now, try to conditionally create a patient with the same identifier
         const newPatient: Patient = {
             resourceType: "Patient",
-            identifier: [{system: "http://example.com/identifier", value: commonIdentifier}],
-            name: [{family: "New", given: ["Patient"]}],
+            identifier: [{
+                system: "http://example.com/identifier",
+                value: commonIdentifier,
+            }],
+            name: [{ family: "New", given: ["Patient"] }],
         };
 
         const response = await fetchWrapper({
@@ -117,14 +164,22 @@ export function runConditionalCreateTests(_context: ITestContext) {
             body: JSON.stringify(newPatient),
         });
 
-        assertEquals(response.success, false, "Conditional create with multiple matches should fail");
-        assertEquals(response.status, 400, "Should return 400 Bad Request for multiple matches");
+        assertEquals(
+            response.success,
+            false,
+            "Conditional create with multiple matches should fail",
+        );
+        assertEquals(
+            response.status,
+            400,
+            "Should return 400 Bad Request for multiple matches",
+        );
     });
 
     it("Conditional Create - Invalid If-None-Exist header", async () => {
         const newPatient: Patient = {
             resourceType: "Patient",
-            name: [{family: "Test", given: ["Invalid"]}],
+            name: [{ family: "Test", given: ["Invalid"] }],
         };
 
         const response = await fetchWrapper({
@@ -137,14 +192,22 @@ export function runConditionalCreateTests(_context: ITestContext) {
             body: JSON.stringify(newPatient),
         });
 
-        assertEquals(response.success, false, "Conditional create with invalid If-None-Exist header should fail");
-        assertEquals(response.status, 400, "Should return 400 Bad Request for invalid If-None-Exist header");
+        assertEquals(
+            response.success,
+            false,
+            "Conditional create with invalid If-None-Exist header should fail",
+        );
+        assertEquals(
+            response.status,
+            400,
+            "Should return 400 Bad Request for invalid If-None-Exist header",
+        );
     });
 
     it("Conditional Create - Unsupported operation", async () => {
         const newPatient: Patient = {
             resourceType: "Patient",
-            name: [{family: "Test", given: ["Unsupported"]}],
+            name: [{ family: "Test", given: ["Unsupported"] }],
         };
 
         const response = await fetchWrapper({
@@ -152,12 +215,20 @@ export function runConditionalCreateTests(_context: ITestContext) {
             relativeUrl: "Patient",
             method: "POST",
             headers: {
-                "If-None-Exist": "_count=1",  // Assuming _count is not supported for conditional create
+                "If-None-Exist": "_count=1", // Assuming _count is not supported for conditional create
             },
             body: JSON.stringify(newPatient),
         });
 
-        assertEquals(response.success, false, "Conditional create with unsupported search parameters should fail");
-        assertEquals(response.status, 400, "Should return 400 Bad Request for unsupported operation");
+        assertEquals(
+            response.success,
+            false,
+            "Conditional create with unsupported search parameters should fail",
+        );
+        assertEquals(
+            response.status,
+            400,
+            "Should return 400 Bad Request for unsupported operation",
+        );
     });
 }

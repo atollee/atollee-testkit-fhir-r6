@@ -3,12 +3,13 @@
 import { fetchWrapper } from "../../utils/fetch.ts";
 import { ITestContext } from "../../types.ts";
 import { assertEquals, assertExists, it } from "../../../../deps.test.ts";
-import { Patient, OperationOutcome } from "npm:@types/fhir/r4.d.ts";
+import { OperationOutcome, Patient } from "npm:@types/fhir/r4.d.ts";
+import { createTestPatient } from "../../utils/resource_creators.ts";
 
 export function runRejectingUpdatesTests(context: ITestContext) {
-    const validPatientId = context.getValidPatientId();
-
     it("Rejecting Updates - 400 Bad Request (Invalid Resource)", async () => {
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         const invalidPatient = {
             resourceType: "Patient",
             id: validPatientId,
@@ -22,29 +23,52 @@ export function runRejectingUpdatesTests(context: ITestContext) {
             body: JSON.stringify(invalidPatient),
         });
 
-        assertEquals(response.success, false, "Update with invalid resource should fail");
-        assertEquals(response.status, 400, "Should return 400 Bad Request for invalid resource");
+        assertEquals(
+            response.success,
+            false,
+            "Update with invalid resource should fail",
+        );
+        assertEquals(
+            response.status,
+            400,
+            "Should return 400 Bad Request for invalid resource",
+        );
         const operationOutcome = response.jsonBody as OperationOutcome;
-        assertExists(operationOutcome.issue, "Response should include an OperationOutcome with issues");
+        assertExists(
+            operationOutcome.issue,
+            "Response should include an OperationOutcome with issues",
+        );
     });
 
-    it("Rejecting Updates - 401 Unauthorized", async () => {
-        const patient: Patient = {
-            resourceType: "Patient",
-            id: validPatientId,
-            active: true,
-        };
+    if (context.isAuthorizedSupported()) {
+        it("Rejecting Updates - 401 Unauthorized", async () => {
+            const validPatient = await createTestPatient(context);
+            const validPatientId = validPatient.id;
+            const patient: Patient = {
+                resourceType: "Patient",
+                id: validPatientId,
+                active: true,
+            };
 
-        const response = await fetchWrapper({
-            authorized: false,  // Explicitly not authorizing this request
-            relativeUrl: `Patient/${validPatientId}`,
-            method: "PUT",
-            body: JSON.stringify(patient),
+            const response = await fetchWrapper({
+                authorized: false, // Explicitly not authorizing this request
+                relativeUrl: `Patient/${validPatientId}`,
+                method: "PUT",
+                body: JSON.stringify(patient),
+            });
+
+            assertEquals(
+                response.success,
+                false,
+                "Unauthorized update should fail",
+            );
+            assertEquals(
+                response.status,
+                401,
+                "Should return 401 Unauthorized for update without proper authorization",
+            );
         });
-
-        assertEquals(response.success, false, "Unauthorized update should fail");
-        assertEquals(response.status, 401, "Should return 401 Unauthorized for update without proper authorization");
-    });
+    }
 
     it("Rejecting Updates - 404 Not Found (Unsupported Resource Type)", async () => {
         const unsupportedResource = {
@@ -59,11 +83,19 @@ export function runRejectingUpdatesTests(context: ITestContext) {
             body: JSON.stringify(unsupportedResource),
         });
 
-        assertEquals(response.success, false, "Update with unsupported resource type should fail");
-        assertEquals(response.status, 404, "Should return 404 Not Found for unsupported resource type");
+        assertEquals(
+            response.success,
+            false,
+            "Update with unsupported resource type should fail",
+        );
+        assertEquals(
+            response.status,
+            404,
+            "Should return 404 Not Found for unsupported resource type",
+        );
     });
 
-    it(`Rejecting Updates - 405 Method Not Allowed (Client-defined ID ${context.isClientDefinedIdsAllowed() ? '' : 'not '}allowed)`, async () => {
+    it(`Rejecting Updates - 405 Method Not Allowed (Client-defined ID ${context.isClientDefinedIdsAllowed() ? "" : "not "}allowed)`, async () => {
         const clientDefinedId = `client-defined-id-${Date.now()}`;
         const newPatient: Patient = {
             resourceType: "Patient",
@@ -79,22 +111,48 @@ export function runRejectingUpdatesTests(context: ITestContext) {
         });
 
         if (context.isClientDefinedIdsAllowed()) {
-            assertEquals(response.success, true, "Update with client-defined ID should succeed when allowed");
-            assertEquals(response.status, 201, "Should return 201 OK when client-defined IDs are supported");
+            assertEquals(
+                response.success,
+                true,
+                "Update with client-defined ID should succeed when allowed",
+            );
+            assertEquals(
+                response.status,
+                201,
+                "Should return 201 OK when client-defined IDs are supported",
+            );
 
             // Verify that the resource was actually updated
             const updatedPatient = response.jsonBody as Patient;
-            assertEquals(updatedPatient.id, clientDefinedId, "The returned patient should have the client-defined ID");
-            assertEquals(updatedPatient.active, true, "The returned patient should have the updated 'active' status");
+            assertEquals(
+                updatedPatient.id,
+                clientDefinedId,
+                "The returned patient should have the client-defined ID",
+            );
+            assertEquals(
+                updatedPatient.active,
+                true,
+                "The returned patient should have the updated 'active' status",
+            );
         } else {
             // Note: This test assumes the server doesn't allow client-defined IDs.
             // If your server does allow this, you should expect a different status code.
-            assertEquals(response.success, false, "Update with client-defined ID should fail if not allowed");
-            assertEquals(response.status, 405, "Should return 405 Method Not Allowed if client-defined IDs are not supported");
+            assertEquals(
+                response.success,
+                false,
+                "Update with client-defined ID should fail if not allowed",
+            );
+            assertEquals(
+                response.status,
+                405,
+                "Should return 405 Method Not Allowed if client-defined IDs are not supported",
+            );
         }
     });
 
     it("Rejecting Updates - 409 Conflict (Version conflict)", async () => {
+        const patient = await createTestPatient(context);
+        const validPatientId = patient.id;
         // First, get the current version
         const initialResponse = await fetchWrapper({
             authorized: true,
@@ -102,7 +160,8 @@ export function runRejectingUpdatesTests(context: ITestContext) {
         });
 
         const initialPatient = initialResponse.jsonBody as Patient;
-        const outdatedVersionId = (parseInt(initialPatient.meta?.versionId || "0") - 1).toString();
+        const outdatedVersionId =
+            (parseInt(initialPatient.meta?.versionId || "0") - 1).toString();
 
         const updatedPatient: Patient = {
             ...initialPatient,
@@ -119,7 +178,15 @@ export function runRejectingUpdatesTests(context: ITestContext) {
             body: JSON.stringify(updatedPatient),
         });
 
-        assertEquals(response.success, false, "Update with outdated version should fail");
-        assertEquals(response.status, 412, "Should return 412 Precondition failed for version conflict");
+        assertEquals(
+            response.success,
+            false,
+            "Update with outdated version should fail",
+        );
+        assertEquals(
+            response.status,
+            412,
+            "Should return 412 Precondition failed for version conflict",
+        );
     });
 }

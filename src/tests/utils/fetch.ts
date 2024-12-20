@@ -15,13 +15,14 @@ export async function fetchWrapper(
         relativeUrl,
         headers: customHeaders = {},
         body,
+        enforceTrace,
         ...otherOptions
     } = options;
 
     let relativeTargetUrl = relativeUrl;
     let logLevel: string | undefined = undefined;
 
-    if (CONFIG.traceFetchCalls) {
+    if (CONFIG.traceFetchCalls || enforceTrace === true) {
         logLevel = "trace";
     } else if (CONFIG.debugFetchCalls) {
         logLevel = "debug";
@@ -38,6 +39,7 @@ export async function fetchWrapper(
     const baseUrl = options.overrideBaseUrl || CONFIG.fhirServerUrl;
     const fhirServerUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
     const url = new URL(relativeTargetUrl, fhirServerUrl).toString();
+    const doNotRecord = options.doNotRecord !== true;
 
     const headers = new Headers(customHeaders);
     if (!headers.has("Content-Type")) {
@@ -84,14 +86,15 @@ export async function fetchWrapper(
             rawBody,
         };
 
-        // Record the HTTP interaction
-        recordHttpInteraction(request, {
-            status: response.status,
-            statusText: response.statusText,
-            headers: Object.fromEntries(response.headers.entries()),
-            body: rawBody,
-        });
-
+        if (doNotRecord) {
+            // Record the HTTP interaction
+            recordHttpInteraction(request, {
+                status: response.status,
+                statusText: response.statusText,
+                headers: Object.fromEntries(response.headers.entries()),
+                body: rawBody,
+            });
+        }
         const failure = CONFIG.recordFetchFailures &&
             responseData.status >= 400;
         if (CONFIG.showFetchResponses || failure) {
@@ -125,13 +128,17 @@ export async function fetchWrapper(
             rawBody: extractErrorMessage(error),
         };
 
-        // Record the HTTP interaction with error
-        recordHttpInteraction(request, {
-            status: errorResponse.status,
-            statusText: "Error",
-            headers: {},
-            body: extractErrorMessage(error),
-        });
+        if (doNotRecord) {
+            // Record the HTTP interaction with error
+            recordHttpInteraction(request, {
+                status: errorResponse.status,
+                statusText: "Error",
+                headers: {},
+                body: extractErrorMessage(error),
+            });
+        } else {
+            console.error(JSON.stringify(errorResponse));
+        }
 
         if (CONFIG.showFetchResponses) {
             console.log(`${method} ${url}... ${errorResponse.status}`);

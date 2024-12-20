@@ -155,44 +155,51 @@ export function runSearchMethodChoiceTests(context: ITestContext) {
             );
         }
     });
+    
+    if (context.isLenientSearchHandlingSupported()) {
+        it("Search - Failure with 4xx status code", async () => {
+            const response = await fetchWrapper({
+                authorized: true,
+                relativeUrl: "Patient?invalid_param=value",
+                headers: { "Prefer": "handling=strict" },
+            });
 
-    it("Search - Failure with 4xx status code", async () => {
-        const response = await fetchWrapper({
-            authorized: true,
-            relativeUrl: "Patient?invalid_param=value",
+            assertEquals(
+                response.success,
+                false,
+                "Search with invalid parameter should fail",
+            );
+            assertEquals(
+                response.status >= 400 && response.status < 500,
+                true,
+                "Should return a 4xx status code",
+            );
+            assertExists(
+                response.jsonBody,
+                "Should return an OperationOutcome",
+            );
+            assertEquals(
+                response.jsonBody.resourceType,
+                "OperationOutcome",
+                "Should return an OperationOutcome resource",
+            );
         });
+    }
+    if (context.isAuthorizedSupported()) {
+        it("Search - Unauthorized access", async () => {
+            const response = await fetchWrapper({
+                authorized: false, // Explicitly not authorizing this request
+                relativeUrl: "Patient?name=Test",
+            });
 
-        assertEquals(
-            response.success,
-            false,
-            "Search with invalid parameter should fail",
-        );
-        assertEquals(
-            response.status >= 400 && response.status < 500,
-            true,
-            "Should return a 4xx status code",
-        );
-        assertExists(response.jsonBody, "Should return an OperationOutcome");
-        assertEquals(
-            response.jsonBody.resourceType,
-            "OperationOutcome",
-            "Should return an OperationOutcome resource",
-        );
-    });
-
-    it("Search - Unauthorized access", async () => {
-        const response = await fetchWrapper({
-            authorized: false, // Explicitly not authorizing this request
-            relativeUrl: "Patient?name=Test",
+            assertEquals(
+                response.success,
+                false,
+                "Unauthorized search should fail",
+            );
+            assertEquals(response.status, 401, "Should return 401 Unauthorized");
         });
-
-        assertEquals(
-            response.success,
-            false,
-            "Unauthorized search should fail",
-        );
-        assertEquals(response.status, 401, "Should return 401 Unauthorized");
-    });
+    }
 
     it("Search - Unsupported resource type", async () => {
         const response = await fetchWrapper({
